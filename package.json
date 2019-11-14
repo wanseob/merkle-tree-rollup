@@ -7,6 +7,7 @@
     "test": "npm run testSolidity && npm run testTS",
     "testSolidity": "echo \"test solidity\"",
     "testTS": "mocha -r ts-node/register test/**/*.test.ts",
+    "ts": "./node_modules/.bin/tsc",
     "prettier": "./node_modules/.bin/prettier --single-quote --write --print-width 160 ./**/*.js",
     "coverage": "./node_modules/.bin/solidity-coverage"
   },
@@ -29,8 +30,12 @@
   },
   "homepage": "https://github.com/wilsonbeam/smt-optimistic-rollup#readme",
   "devDependencies": {
+    "@types/bn.js": "^4.11.5",
     "@types/chai": "^4.2.4",
+    "@types/levelup": "^3.1.1",
     "@types/mocha": "^5.2.7",
+    "@types/rimraf": "^2.0.3",
+    "@types/rocksdb": "^3.0.0",
     "@types/web3": "^1.2.2",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
@@ -40,6 +45,7 @@
     "lint-staged": "^9.4.2",
     "mocha": "^6.2.2",
     "prettier": "^1.19.1",
+    "rimraf": "^3.0.0",
     "truffle": "^5.0.44",
     "ts-node": "^8.5.0",
     "typescript": "^3.7.2"
@@ -60,6 +66,8 @@
     ]
   },
   "dependencies": {
+    "bn.js": "^5.0.0",
+    "level-rocksdb": "^4.0.0",
     "web3-utils": "^1.2.2"
   }
 }
