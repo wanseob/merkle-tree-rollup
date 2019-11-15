@@ -12,6 +12,10 @@ export interface SMT256Contract extends Truffle.Contract<SMT256Instance> {
   'new'(meta?: Truffle.TransactionDetails): Promise<SMT256Instance>;
 }
 
+export interface SMT256RollUpContract extends Truffle.Contract<SMT256RollUpInstance> {
+  'new'(meta?: Truffle.TransactionDetails): Promise<SMT256RollUpInstance>;
+}
+
 export interface MigrationsInstance extends Truffle.ContractInstance {
   last_completed_migration(txDetails?: Truffle.TransactionDetails): Promise<BigNumber>;
 
@@ -36,4 +40,91 @@ export interface SMT256Instance extends Truffle.ContractInstance {
   EXIST(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   NON_EXIST(txDetails?: Truffle.TransactionDetails): Promise<string>;
+
+  inclusionProof(
+    root: string | BigNumber,
+    nullifier: string | BigNumber,
+    siblings: (string | BigNumber)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  nonInclusionProof(
+    root: string | BigNumber,
+    nullifier: string | BigNumber,
+    siblings: (string | BigNumber)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  merkleProof(
+    root: string | BigNumber,
+    leaf: string | BigNumber,
+    value: string | BigNumber,
+    siblings: (string | BigNumber)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<boolean>;
+
+  rollUp1(
+    root: string | BigNumber,
+    nextRoot: string | BigNumber,
+    nullifier: string | BigNumber,
+    siblings: (string | BigNumber)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp2(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp4(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp8(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp16(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp32(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+
+  rollUp64(
+    root: string | BigNumber,
+    nextRoots: (string | BigNumber)[],
+    nullifiers: (string | BigNumber)[],
+    siblings: (string | BigNumber)[][],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
+}
+
+export interface SMT256RollUpInstance extends Truffle.ContractInstance {
+  rollUp: {
+    (txDetails?: Truffle.TransactionDetails): Promise<Truffle.TransactionResponse>;
+    call(txDetails?: Truffle.TransactionDetails): Promise<boolean>;
+    sendTransaction(txDetails?: Truffle.TransactionDetails): Promise<string>;
+    estimateGas(txDetails?: Truffle.TransactionDetails): Promise<number>;
+  };
 }

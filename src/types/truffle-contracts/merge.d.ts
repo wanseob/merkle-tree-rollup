@@ -10,6 +10,7 @@ declare global {
     interface Artifacts {
       require(name: 'Migrations'): TruffleContracts.MigrationsContract;
       require(name: 'SMT256'): TruffleContracts.SMT256Contract;
+      require(name: 'SMT256RollUp'): TruffleContracts.SMT256RollUpContract;
     }
   }
 }

@@ -18,16 +18,16 @@ library SMT256 {
     function inclusionProof(
         bytes32 root,
         bytes32 nullifier,
-        bytes32[255] memory siblings
-    ) internal pure returns(bool) {
+        bytes32[256] memory siblings
+    ) public pure returns(bool) {
         return merkleProof(root, nullifier, EXIST, siblings);
     }
 
     function nonInclusionProof(
         bytes32 root,
         bytes32 nullifier,
-        bytes32[255] memory siblings
-    ) internal pure returns(bool) {
+        bytes32[256] memory siblings
+    ) public pure returns(bool) {
         return merkleProof(root, nullifier, NON_EXIST, siblings);
     }
 
@@ -35,11 +35,11 @@ library SMT256 {
         bytes32 root,
         bytes32 leaf,
         bytes32 value,
-        bytes32[255] memory siblings
-    ) internal pure returns(bool) {
+        bytes32[256] memory siblings
+    ) public pure returns(bool) {
         bytes32 cursor = value;
         uint path = uint(leaf);
-        for (uint8 i = 0; i < siblings.length; i++) {
+        for (uint16 i = 0; i < siblings.length; i++) {
             if (path % 2 == 0) {
                 // Right sibling
                 cursor = keccak256(abi.encodePacked(cursor, siblings[i]));
@@ -57,20 +57,59 @@ library SMT256 {
         bytes32 root,
         bytes32 nextRoot,
         bytes32 nullifier,
-        bytes32[255] memory siblings
-    ) internal pure returns (bytes32) {
+        bytes32[256] memory siblings
+    ) public pure returns (bytes32) {
         require(root != nextRoot, "Nullifier should update the root");
         require(nonInclusionProof(root, nullifier, siblings), "Prev root is invalid for the nullifier and its sibling");
         require(inclusionProof(nextRoot, nullifier, siblings), "Next root is invalid for the nullifier and its sibling");
         return nextRoot;
+    }
+    
+    function rollUp2(
+        bytes32 root,
+        bytes32[2] memory nextRoots,
+        bytes32[2] memory nullifiers,
+        bytes32[256][2] memory siblings
+    ) public pure returns (bytes32) {
+        bytes32 cursor = root;
+        for (uint8 i = 0; i < 2; i ++) {
+            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
+        }
+        return cursor;
+    }
+
+    function rollUp4(
+        bytes32 root,
+        bytes32[4] memory nextRoots,
+        bytes32[4] memory nullifiers,
+        bytes32[256][4] memory siblings
+    ) public pure returns (bytes32) {
+        bytes32 cursor = root;
+        for (uint8 i = 0; i < 4; i ++) {
+            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
+        }
+        return cursor;
+    }
+
+    function rollUp8(
+        bytes32 root,
+        bytes32[8] memory nextRoots,
+        bytes32[8] memory nullifiers,
+        bytes32[256][8] memory siblings
+    ) public pure returns (bytes32) {
+        bytes32 cursor = root;
+        for (uint8 i = 0; i < 8; i ++) {
+            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
+        }
+        return cursor;
     }
 
     function rollUp16(
         bytes32 root,
         bytes32[16] memory nextRoots,
         bytes32[16] memory nullifiers,
-        bytes32[255][16] memory siblings
-    ) internal pure returns (bytes32) {
+        bytes32[256][16] memory siblings
+    ) public pure returns (bytes32) {
         bytes32 cursor = root;
         for (uint8 i = 0; i < 16; i ++) {
             cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
@@ -82,8 +121,8 @@ library SMT256 {
         bytes32 root,
         bytes32[32] memory nextRoots,
         bytes32[32] memory nullifiers,
-        bytes32[255][32] memory siblings
-    ) internal pure returns (bytes32) {
+        bytes32[256][32] memory siblings
+    ) public pure returns (bytes32) {
         bytes32 cursor = root;
         for (uint8 i = 0; i < 32; i ++) {
             cursor = rollUp1(root, nextRoots[i], nullifiers[i], siblings[i]);
@@ -95,8 +134,8 @@ library SMT256 {
         bytes32 root,
         bytes32[64] memory nextRoots,
         bytes32[64] memory nullifiers,
-        bytes32[255][64] memory siblings
-    ) internal pure returns (bytes32) {
+        bytes32[256][64] memory siblings
+    ) public pure returns (bytes32) {
         bytes32 cursor = root;
         for (uint8 i = 0; i < 64; i ++) {
             cursor = rollUp1(root, nextRoots[i], nullifiers[i], siblings[i]);
