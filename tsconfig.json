@@ -6,6 +6,7 @@
     "outDir": "dist",
     "sourceMap": true,
     "baseUrl": ".",
+    "declaration": true,
     "paths": {
       "*": ["node_moduels/*", "src/types/*"]
     }

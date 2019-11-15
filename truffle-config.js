@@ -1,7 +1,8 @@
+require('ts-node/register');
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
- * compilation and testing. Uncomment the ones you need or modify
+ * compilation and esting. Uncomment the ones you need or modify
  * them to suit your project as necessary.
  *
  * More information about configuration can be found at:
@@ -25,6 +26,8 @@
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
 module.exports = {
+  test_file_extension_regexp: /.*\.sol.ts$/,
+
   /**
    * Networks define how you connect to your ethereum client and let you set the
    * defaults web3 uses to send transactions. If you don't specify one truffle

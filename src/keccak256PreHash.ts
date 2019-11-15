@@ -1,4 +1,4 @@
-interface HashMap {
+export interface HashMap {
   [details: number]: string;
 }
 
@@ -258,5 +258,6 @@ export const keccak256PreHash: HashMap = {
   252: '0xcc1dd30a50737235a18ee3b092408bdf4d6cc12554935e3d47e1d5d3a450c436',
   253: '0xacd491e2fb8c10366f7cc36e2cdd90f3a17c743bbfb4515d6259d5278e11b5aa',
   254: '0x1c1f213f14d445be8d8315f01863e5dae88cf0c78d5e388ec79d2e135877ad51',
-  255: '0xa9a4da177ac3f81cfe85a6767678aabb095aa306e72ab73f5cf0559c56d0a530'
+  255: '0xa9a4da177ac3f81cfe85a6767678aabb095aa306e72ab73f5cf0559c56d0a530',
+  256: '0x7904211bc13454321ffb7d6e736f3c0dbc08b38e994f66984f17e77fbc12e982'
 };
