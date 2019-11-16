@@ -80,5 +80,8 @@
   "dependencies": {
     "level-rocksdb": "^4.0.0",
     "web3-utils": "^1.2.2"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   }
 }
