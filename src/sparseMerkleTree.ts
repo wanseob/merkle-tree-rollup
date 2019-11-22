@@ -14,7 +14,7 @@ export interface Hasher {
   preHash: PreHash;
 }
 
-export interface Proof {
+export interface MerkleProof {
   root: Hex;
   leaf: Hex;
   val: Hex;
@@ -25,9 +25,9 @@ export interface SMT {
   depth: number;
   hasher: Hasher;
   root(): Promise<Hex>;
-  updateLeaf(leaf: Hex, val: Hex): Promise<Hex>;
-  merkleProof(leaf: Hex): Promise<Proof>;
-  verityProof(proof: Proof): boolean;
+  updateLeaf(leaf: Hex, val: Hex): Promise<MerkleProof>;
+  merkleProof(leaf: Hex): Promise<MerkleProof>;
+  verityProof(proof: MerkleProof): boolean;
   // exist(leaf: Hex): Promise<boolean>;
 }
 
@@ -41,7 +41,7 @@ export const solidityHasher = {
   preHash: keccak256PreHash
 };
 
-export const verifyProof = (proof: Proof) => {
+export const verifyProof = (proof: MerkleProof) => {
   let path = '1' + toBN(proof.leaf).toString(2, proof.siblings.length);
 };
 
@@ -52,6 +52,8 @@ export class SparseMerkleTree implements SMT {
   readonly depth: number;
   readonly location: string;
   readonly leafPrefix: BN;
+  rootNode: Hex;
+  rootLock: Boolean;
   hasher: Hasher;
   nodes: RocksDB;
   values: RocksDB;
@@ -70,9 +72,18 @@ export class SparseMerkleTree implements SMT {
     this.nodes = RocksDB(location + '/node');
     this.values = RocksDB(location + '/values');
     this.leafPrefix = new BN(1).shln(depth);
+    this.rootNode = null;
+    this.rootLock = false;
   }
+
   async root(): Promise<Hex> {
-    return (await this.getNodeHash(new BN(1))).toString();
+    if (this.rootNode == null) {
+      this.rootNode = (await this.getNodeHash(new BN(1))).toString();
+    }
+    if (this.rootLock) {
+      throw Error('SMT is updating the root');
+    }
+    return this.rootNode;
   }
 
   getValue(leaf: Hex): Promise<RocksDB.Bytes> {
@@ -93,7 +104,7 @@ export class SparseMerkleTree implements SMT {
       }
     });
   }
-  async merkleProof(leaf: Hex): Promise<Proof> {
+  async merkleProof(leaf: Hex): Promise<MerkleProof> {
     let rightSibling = false;
     let cursor = this.leafPrefix.add(toBN(leaf));
     let siblings: Hex[] = [];
@@ -104,7 +115,7 @@ export class SparseMerkleTree implements SMT {
       siblings.push(sibling);
       cursor = cursor.shrn(1);
     } while (!cursor.shrn(1).isZero());
-    let proof: Proof = {
+    let proof: MerkleProof = {
       leaf,
       val: (await this.getValue(leaf)).toString(),
       root: await this.root(),
@@ -114,7 +125,7 @@ export class SparseMerkleTree implements SMT {
     return proof;
   }
 
-  verityProof(proof: Proof): boolean {
+  verityProof(proof: MerkleProof): boolean {
     let cursor: BN = this.leafPrefix.add(toBN(proof.leaf));
     let leafHash = this.hasher.hash(proof.val);
     let root = leafHash;
@@ -129,18 +140,37 @@ export class SparseMerkleTree implements SMT {
     return root === proof.root;
   }
 
-  async updateLeaf(leaf: Hex, val: Hex): Promise<Hex> {
+  async updateLeaf(leaf: Hex, val: Hex): Promise<MerkleProof> {
+    // Lock the root mutation
+    this.lock();
     // Put exist hash value to the
     let leafNode = this.leafPrefix.add(toBN(leaf));
     let leafNodeValue = soliditySha3(val);
     // Store the value
-    await this.put(soliditySha3(val), val.toString());
+    await this.storeValue(soliditySha3(val), val.toString());
     // Update parent nodes
     await this.updateNode(leafNode, leafNodeValue);
-    return await this.updateParentNode(leafNode, leafNodeValue);
+    this.rootNode = await this.updateNodeRecursively(leafNode, leafNodeValue);
+    // Unlock the root mutation
+    this.unlock();
+    return this.merkleProof(leaf);
   }
 
-  private async updateParentNode(child: BN, val: Hex): Promise<Hex> {
+  private lock() {
+    if (this.rootLock) {
+      throw Error('Already locked');
+    }
+    this.rootLock = true;
+  }
+
+  private unlock() {
+    if (!this.rootLock) {
+      throw Error('Nothing to unlock');
+    }
+    this.rootLock = false;
+  }
+
+  private async updateNodeRecursively(child: BN, val: Hex): Promise<Hex> {
     // Get parent node's path index
     let parentNode = child.shrn(1); // child >> 1
     if (parentNode.isZero()) {
@@ -156,7 +186,7 @@ export class SparseMerkleTree implements SMT {
       // Update parent node hash value
       await this.updateNode(parentNode, parentHash);
       // Recursively update parents
-      return await this.updateParentNode(parentNode, parentHash);
+      return await this.updateNodeRecursively(parentNode, parentHash);
     }
   }
 
@@ -173,7 +203,7 @@ export class SparseMerkleTree implements SMT {
     });
   }
 
-  private put(key: RocksDB.Bytes, val: RocksDB.Bytes): Promise<boolean> {
+  private storeValue(key: RocksDB.Bytes, val: RocksDB.Bytes): Promise<boolean> {
     return new Promise<boolean>(resolve => {
       this.values.put(key, val, err => {
         if (err) {

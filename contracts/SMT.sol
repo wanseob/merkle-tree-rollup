@@ -15,20 +15,26 @@ library SMT256 {
     // in Web3JS: soliditySha3(0)
     bytes32 constant public NON_EXIST = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
 
+    struct RollUpProof {
+        bytes32 root;
+        bytes32[] leaves;
+        bytes32[256][] siblings;
+    }
+
     function inclusionProof(
         bytes32 root,
-        bytes32 nullifier,
+        bytes32 leaf,
         bytes32[256] memory siblings
     ) public pure returns(bool) {
-        return merkleProof(root, nullifier, EXIST, siblings);
+        return merkleProof(root, leaf, EXIST, siblings);
     }
 
     function nonInclusionProof(
         bytes32 root,
-        bytes32 nullifier,
+        bytes32 leaf,
         bytes32[256] memory siblings
     ) public pure returns(bool) {
-        return merkleProof(root, nullifier, NON_EXIST, siblings);
+        return merkleProof(root, leaf, NON_EXIST, siblings);
     }
 
     function merkleProof(
@@ -37,6 +43,15 @@ library SMT256 {
         bytes32 value,
         bytes32[256] memory siblings
     ) public pure returns(bool) {
+        require(calculateRoot(leaf, value, siblings) == root, "Invalid merkle proof");
+        return true;
+    }
+
+    function calculateRoot(
+        bytes32 leaf,
+        bytes32 value,
+        bytes32[256] memory siblings
+    ) public pure returns (bytes32) {
         bytes32 cursor = value;
         uint path = uint(leaf);
         for (uint16 i = 0; i < siblings.length; i++) {
@@ -49,97 +64,40 @@ library SMT256 {
             }
             path = path >> 1;
         }
-        require(cursor == root, "Invalid merkle proof");
-        return true;
+        return cursor;
     }
 
-    function rollUp1(
+    function append(
         bytes32 root,
-        bytes32 nextRoot,
-        bytes32 nullifier,
+        bytes32 leaf,
         bytes32[256] memory siblings
-    ) public pure returns (bytes32) {
-        require(root != nextRoot, "Nullifier should update the root");
-        require(nonInclusionProof(root, nullifier, siblings), "Prev root is invalid for the nullifier and its sibling");
-        require(inclusionProof(nextRoot, nullifier, siblings), "Next root is invalid for the nullifier and its sibling");
-        return nextRoot;
+    ) public pure returns (bytes32 nextRoot) {
+        // Prove that the array of sibling is valid and also the leaf does not exist in the tree
+        require(nonInclusionProof(root, leaf, siblings), "Failed to build the previous root using jthe leaf and its sibling");
+        // Calculate the new root when the leaf exists using its proven siblings
+        nextRoot = calculateRoot(leaf, EXIST, siblings);
+        // Make sure it has been updated
+        require(root != nextRoot, "Already exisiting leaf");
     }
     
-    function rollUp2(
-        bytes32 root,
-        bytes32[2] memory nextRoots,
-        bytes32[2] memory nullifiers,
-        bytes32[256][2] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 2; i ++) {
-            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
+    function rollUp(RollUpProof memory proof) internal pure returns (bytes32) {
+        // Inspect the RollUpProof structure
+        require(proof.leaves.length == proof.siblings.length, "Both array should have same length");
+        // Start from the root
+        bytes32 root = proof.root;
+        // Update the root using append function
+        for (uint i = 0; i < proof.leaves.length; i ++) {
+            root = append(root, proof.leaves[i], proof.siblings[i]);
         }
-        return cursor;
+        return root;
     }
 
-    function rollUp4(
+    function rollUpProof(
         bytes32 root,
-        bytes32[4] memory nextRoots,
-        bytes32[4] memory nullifiers,
-        bytes32[256][4] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 4; i ++) {
-            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
-        }
-        return cursor;
-    }
-
-    function rollUp8(
-        bytes32 root,
-        bytes32[8] memory nextRoots,
-        bytes32[8] memory nullifiers,
-        bytes32[256][8] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 8; i ++) {
-            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
-        }
-        return cursor;
-    }
-
-    function rollUp16(
-        bytes32 root,
-        bytes32[16] memory nextRoots,
-        bytes32[16] memory nullifiers,
-        bytes32[256][16] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 16; i ++) {
-            cursor = rollUp1(cursor, nextRoots[i], nullifiers[i], siblings[i]);
-        }
-        return cursor;
-    }
-
-    function rollUp32(
-        bytes32 root,
-        bytes32[32] memory nextRoots,
-        bytes32[32] memory nullifiers,
-        bytes32[256][32] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 32; i ++) {
-            cursor = rollUp1(root, nextRoots[i], nullifiers[i], siblings[i]);
-        }
-        return cursor;
-    }
-
-    function rollUp64(
-        bytes32 root,
-        bytes32[64] memory nextRoots,
-        bytes32[64] memory nullifiers,
-        bytes32[256][64] memory siblings
-    ) public pure returns (bytes32) {
-        bytes32 cursor = root;
-        for (uint8 i = 0; i < 64; i ++) {
-            cursor = rollUp1(root, nextRoots[i], nullifiers[i], siblings[i]);
-        }
-        return cursor;
+        bytes32 nextRoot,
+        bytes32[] memory leaves,
+        bytes32[256][] memory siblings
+    ) public pure returns (bool) {
+        require(nextRoot == rollUp(RollUpProof(root, leaves, siblings)), "Failed to drive the next root from the proof");
     }
 }

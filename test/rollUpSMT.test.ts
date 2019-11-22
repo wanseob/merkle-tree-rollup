@@ -2,13 +2,13 @@ import { keccak256PreHash } from '../src/keccak256PreHash';
 import { soliditySha3 } from 'web3-utils';
 import chai from 'chai';
 import fs from 'fs-extra';
-import { NullifierTree } from '../src/nullifierTree';
+import { RollUpSMT } from '../src/rollUpSMT';
 
 const expect = chai.expect;
 
 describe('NullifierTree', () => {
   const location = 'testDB';
-  let nullifierTree: NullifierTree;
+  let nullifierTree: RollUpSMT;
 
   before(() => {
     // Initialize the test purpose database directory
@@ -16,7 +16,7 @@ describe('NullifierTree', () => {
       fs.removeSync(location);
     }
     fs.mkdirSync(location);
-    nullifierTree = new NullifierTree(256, location);
+    nullifierTree = new RollUpSMT(256, location);
   });
   after(() => {
     // Remove the test purpose database
@@ -28,7 +28,7 @@ describe('NullifierTree', () => {
     let nullifier = soliditySha3(412);
     let merkleProof1 = await nullifierTree.merkleProof(nullifier);
     expect(merkleProof1.val).to.equal('0');
-    await nullifierTree.addNullifier(nullifier);
+    await nullifierTree.append(nullifier);
     let merkleProof2 = await nullifierTree.merkleProof(nullifier);
     expect(merkleProof2.val).to.equal('exist');
   });
@@ -39,13 +39,13 @@ describe('NullifierTree', () => {
     let root1 = await nullifierTree.root();
     expect(merkleProof1.val).to.equal('0');
     // Add leaf
-    await nullifierTree.addNullifier(nullifier);
+    await nullifierTree.append(nullifier);
     // Inclusion proof
     let merkleProof2 = await nullifierTree.merkleProof(nullifier);
     let root2 = await nullifierTree.root();
     expect(merkleProof2.val).to.equal('exist');
     // Revert
-    await nullifierTree.revertNullifier(nullifier);
+    await nullifierTree.remove(nullifier);
     // Non inclusion proof again
     let merkleProof3 = await nullifierTree.merkleProof(nullifier);
     let root3 = await nullifierTree.root();
@@ -58,7 +58,7 @@ describe('NullifierTree', () => {
   it('should not affect the tree during its dry run', async () => {
     let nullifiers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].map(i => soliditySha3(i));
     let root1 = await nullifierTree.root();
-    await nullifierTree.dryRunBatchAddNullifiers(nullifiers);
+    await nullifierTree.dryRunRollUp(nullifiers);
     let root2 = await nullifierTree.root();
     expect(root1).to.equal(root2);
   });

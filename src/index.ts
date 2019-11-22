@@ -1,2 +1,2 @@
-export { SparseMerkleTree, PreHash, Proof, Hasher, SMT, solidityHasher, verifyProof } from './sparseMerkleTree';
-export { NullifierTree } from './nullifierTree';
+export { SparseMerkleTree, PreHash, MerkleProof, Hasher, SMT, solidityHasher, verifyProof } from './sparseMerkleTree';
+export { RollUpSMT } from './rollUpSMT';
