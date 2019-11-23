@@ -1,5 +1,5 @@
 import chai from 'chai';
-import { SMT256Instance } from 'truffle-contracts';
+import { SMT256Instance } from './types/truffle-contracts';
 import { soliditySha3 } from 'web3-utils';
 import fs from 'fs-extra';
 import { RollUpSMT } from '../src/rollUpSMT';

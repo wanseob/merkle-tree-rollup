@@ -15,7 +15,7 @@ library SMT256 {
     // in Web3JS: soliditySha3(0)
     bytes32 constant public NON_EXIST = 0x290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563;
 
-    struct RollUpProof {
+    struct RollUp {
         bytes32 root;
         bytes32[] leaves;
         bytes32[256][] siblings;
@@ -80,8 +80,8 @@ library SMT256 {
         require(root != nextRoot, "Already exisiting leaf");
     }
     
-    function rollUp(RollUpProof memory proof) internal pure returns (bytes32) {
-        // Inspect the RollUpProof structure
+    function rollUp(RollUp memory proof) internal pure returns (bytes32) {
+        // Inspect the RollUp structure
         require(proof.leaves.length == proof.siblings.length, "Both array should have same length");
         // Start from the root
         bytes32 root = proof.root;
@@ -92,12 +92,20 @@ library SMT256 {
         return root;
     }
 
+    function rollUp(
+        bytes32 root,
+        bytes32[] memory leaves,
+        bytes32[256][] memory siblings
+    ) public pure returns (bytes32 nextRoot) {
+        nextRoot = rollUp(RollUp(root, leaves, siblings));
+    }
+
     function rollUpProof(
         bytes32 root,
         bytes32 nextRoot,
         bytes32[] memory leaves,
         bytes32[256][] memory siblings
     ) public pure returns (bool) {
-        require(nextRoot == rollUp(RollUpProof(root, leaves, siblings)), "Failed to drive the next root from the proof");
+        require(nextRoot == rollUp(RollUp(root, leaves, siblings)), "Failed to drive the next root from the proof");
     }
 }

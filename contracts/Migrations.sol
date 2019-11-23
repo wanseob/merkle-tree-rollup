@@ -1,5 +1,8 @@
 pragma solidity >=0.4.21 <0.6.0;
 
+import { SMT256 } from "../contracts/SMT.sol";
+
+
 contract Migrations {
   address public owner;
   uint public last_completed_migration;

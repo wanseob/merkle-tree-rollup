@@ -143,9 +143,9 @@
   integrity sha512-NYrtPht0wGzhwe9+/idPaBB+TqkY9AhTvOLMkThm0IoEfLaiVQZwBwyJ5puCkO3AUCWrmcoePjp2mbFocKy4SQ==
 
 "@types/node@*", "@types/node@^12.6.1":
-  version "12.12.11"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.11.tgz#bec2961975888d964196bf0016a2f984d793d3ce"
-  integrity sha512-O+x6uIpa6oMNTkPuHDa9MhMMehlxLAd5QcOvKRjAFsBVpeFWTOPnXbDvILvFgFFZfQ1xh1EZi1FbXxUix+zpsQ==
+  version "12.12.12"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.12.tgz#529bc3e73dbb35dd9e90b0a1c83606a9d3264bdb"
+  integrity sha512-MGuvYJrPU0HUwqF7LqvIj50RZUX23Z+m583KBygKYUZLlZ88n6w28XRNJRJgsHukLEnLz6w6SvxZoLgbr5wLqQ==
 
 "@types/node@^10.0.3", "@types/node@^10.12.18", "@types/node@^10.3.2":
   version "10.17.5"
@@ -163,9 +163,9 @@
   integrity sha512-f5j5b/Gf71L+dbqxIpQ4Z2WlmI/mPJ0fOkGGmFgtb6sAu97EPczzbS3/tJKxmcYDj55OX6ssqwDAWOHIYDRDGA==
 
 "@types/prettier@^1.13.2":
-  version "1.18.4"
-  resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-1.18.4.tgz#40bebad38700a2f785940f01bdc067276fd2f7b8"
-  integrity sha512-03H3ZfaayhhSwcE8YfYd2OWlUK2IaJYQO/7Q5DjhaU2PQw8OSoH/dl6dxdhTyA32aBg4+k+1EOCqb8czIeVY6Q==
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-1.19.0.tgz#a2502fb7ce9b6626fdbfc2e2a496f472de1bdd05"
+  integrity sha512-gDE8JJEygpay7IjA/u3JiIURvwZW08f0cZSZLAzFoX/ZmeqvS0Sqv+97aKuHpNsalAMMhwPe+iAS6fQbfmbt7A==
 
 "@types/qs@^6.2.31":
   version "6.9.0"
@@ -1662,9 +1662,9 @@ elliptic@6.3.3:
     inherits "^2.0.1"
 
 elliptic@^6.0.0, elliptic@^6.4.0, elliptic@^6.4.1:
-  version "6.5.1"
-  resolved "https://registry.yarnpkg.com/elliptic/-/elliptic-6.5.1.tgz#c380f5f909bf1b9b4428d028cd18d3b0efd6b52b"
-  integrity sha512-xvJINNLbTeWQjrl6X+7eQCrIy/YPv5XCpKW6kB5mKvtnGILoLDcySuwomfdzt0BMdLNVnuRNTuzKNHj0bva1Cg==
+  version "6.5.2"
+  resolved "https://registry.yarnpkg.com/elliptic/-/elliptic-6.5.2.tgz#05c5678d7173c049d8ca433552224a495d0e3762"
+  integrity sha512-f4x70okzZbIQl/NSRLkI/+tteV/9WqL98zx+SQ69KbXxmVrmjwsNUPn/gYJJ0sHvEak24cZgHIPegRePAtA/xw==
   dependencies:
     bn.js "^4.4.0"
     brorand "^1.0.1"
@@ -4792,9 +4792,9 @@ path-key@^2.0.0, path-key@^2.0.1:
   integrity sha1-QRyttXTFoUDTpLGRDUDYDMn0C0A=
 
 path-key@^3.0.0, path-key@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/path-key/-/path-key-3.1.0.tgz#99a10d870a803bdd5ee6f0470e58dfcd2f9a54d3"
-  integrity sha512-8cChqz0RP6SHJkMt48FW0A7+qUOn+OsnOsVtzI59tZ8m+5bCSk7hzwET0pulwOM2YMn9J1efb07KB9l9f30SGg==
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/path-key/-/path-key-3.1.1.tgz#581f6ade658cbba65a0d3380de7753295054f375"
+  integrity sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==
 
 path-parse@^1.0.5, path-parse@^1.0.6:
   version "1.0.6"
@@ -6250,9 +6250,9 @@ truffle-typings@^1.0.8:
     "@types/web3" "^1.0.18"
 
 truffle@^5.0.44:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/truffle/-/truffle-5.1.0.tgz#670d6791a2a97c6bf852d28a978e6635fe3c883a"
-  integrity sha512-RKij9cFhHeAb8HuP8D/llpcbe+k40fg8Q2SAeR+mkvlz9tid/opYkrWs9XN8eRQKCC0SSygrKBZLG3CMsNbXwQ==
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/truffle/-/truffle-5.1.1.tgz#0430fb85f3704d629e83c201bf5b75603bd65afc"
+  integrity sha512-Mg5+A/qPGFVqQ7QNQjESaUoG4i3L58FmvllhhhMsxveXgSa2wbSucmC8zYayQ7j7XTUZw6oDwYyH4iExyLeiTQ==
   dependencies:
     app-module-path "^2.2.0"
     mocha "5.2.0"
@@ -6346,7 +6346,7 @@ typechain-target-truffle@^1.0.0:
   dependencies:
     lodash "^4.17.15"
 
-typechain-target-web3-v1@^1.0.0:
+typechain-target-web3-v1@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/typechain-target-web3-v1/-/typechain-target-web3-v1-1.0.2.tgz#bea12649769689d83540dfa49709069eaf57515b"
   integrity sha512-32vOvKocSJ6I1KLOH0lS9h31SIplsnCDH98aUL6Bv8beEybnqvVJZQp/Lu8nWQ4DDNv9CeXJ9uSM7GJlQcCgmQ==
@@ -6783,7 +6783,7 @@ web3-shh@1.2.4:
     web3-core-subscriptions "1.2.4"
     web3-net "1.2.4"
 
-web3-utils@1.2.4, web3-utils@^1.2.1, web3-utils@^1.2.2:
+web3-utils@1.2.4, web3-utils@^1.2.1, web3-utils@^1.2.4:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/web3-utils/-/web3-utils-1.2.4.tgz#96832a39a66b05bf8862a5b0bdad2799d709d951"
   integrity sha512-+S86Ip+jqfIPQWvw2N/xBQq5JNqCO0dyvukGdJm8fEWHZbckT4WxSpHbx+9KLEWY4H4x9pUwnoRkK87pYyHfgQ==

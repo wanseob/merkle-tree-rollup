@@ -3,6 +3,7 @@
 
 /// <reference types="truffle-typings" />
 import { BigNumber } from 'bignumber.js';
+import { Hex } from 'web3-utils';
 
 export interface MigrationsContract extends Truffle.Contract<MigrationsInstance> {
   'new'(meta?: Truffle.TransactionDetails): Promise<MigrationsInstance>;
@@ -38,36 +39,46 @@ export interface SMT256Instance extends Truffle.ContractInstance {
   NON_EXIST(txDetails?: Truffle.TransactionDetails): Promise<string>;
 
   inclusionProof(
-    root: string | BigNumber,
-    leaf: string | BigNumber,
-    siblings: (string | BigNumber)[],
+    root: string | BigNumber | Hex,
+    leaf: string | BigNumber | Hex,
+    siblings: (string | BigNumber | Hex)[],
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   nonInclusionProof(
-    root: string | BigNumber,
-    leaf: string | BigNumber,
-    siblings: (string | BigNumber)[],
+    root: string | BigNumber | Hex,
+    leaf: string | BigNumber | Hex,
+    siblings: (string | BigNumber | Hex)[],
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
   merkleProof(
-    root: string | BigNumber,
-    leaf: string | BigNumber,
-    value: string | BigNumber,
-    siblings: (string | BigNumber)[],
+    root: string | BigNumber | Hex,
+    leaf: string | BigNumber | Hex,
+    value: string | BigNumber | Hex,
+    siblings: (string | BigNumber | Hex)[],
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 
-  calculateRoot(leaf: string | BigNumber, value: string | BigNumber, siblings: (string | BigNumber)[], txDetails?: Truffle.TransactionDetails): Promise<string>;
+  calculateRoot(
+    leaf: string | BigNumber | Hex,
+    value: string | BigNumber | Hex,
+    siblings: (string | BigNumber | Hex)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
 
-  append(root: string | BigNumber, leaf: string | BigNumber, siblings: (string | BigNumber)[], txDetails?: Truffle.TransactionDetails): Promise<string>;
+  append(
+    root: string | BigNumber | Hex,
+    leaf: string | BigNumber | Hex,
+    siblings: (string | BigNumber | Hex)[],
+    txDetails?: Truffle.TransactionDetails
+  ): Promise<string>;
 
   rollUpProof(
-    root: string | BigNumber,
-    nextRoot: string | BigNumber,
-    leaves: (string | BigNumber)[],
-    siblings: (string | BigNumber)[][],
+    root: string | BigNumber | Hex,
+    nextRoot: string | BigNumber | Hex,
+    leaves: (string | BigNumber | Hex)[],
+    siblings: (string | BigNumber | Hex)[][],
     txDetails?: Truffle.TransactionDetails
   ): Promise<boolean>;
 }
