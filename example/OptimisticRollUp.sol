@@ -2,8 +2,7 @@ pragma solidity >=0.4.21 <0.6.0;
 
 import { SMT256 } from "../contracts/SMT.sol";
 
-
-contract OptimisticRollUp {
+contract OptimisticRollUpExample {
     using SMT256 for bytes32;
 
     struct OptimisticRollUp {
@@ -27,57 +26,63 @@ contract OptimisticRollUp {
     mapping(address=>Proposer) public proposers;
     mapping(bytes32=>OptimisticRollUp) public candidates;
 
-    constructor(uint challengePeriod, uint minimumStake) public {
-        this.challengePeriod = challengePeriod;
-        this.minimumStake = minimumStake;
+    constructor(uint _challengePeriod, uint _minimumStake) public {
+        challengePeriod = _challengePeriod;
+        minimumStake = _minimumStake;
     }
 
     function register() public payable {
-        require(msg.value  >= this.minimumStake, "Should stake more than minimum amount of ETH");
+        require(msg.value >= minimumStake, "Should stake more than minimum amount of ETH");
         Proposer storage proposer = proposers[msg.sender];
-        proposer.stake +=  msg.value;
+        proposer.stake += msg.value;
     }
-    
+
     function deregister() public {
         address payable proposerAddr = msg.sender;
         Proposer storage proposer = proposers[proposerAddr];
         require(proposer.exitAllowance <= block.number, "Still in the challenge period");
-        proposer.transfer(proposer.reward + proposer.stake);
+        proposerAddr.transfer(proposer.reward + proposer.stake);
         proposer.stake = 0;
         proposer.reward = 0;
     }
 
-    function optimisticRollUp(bytes32 prevRoot, bytes32 newRoot, bytes32[] memory leaves, bytes32[256][] memory siblings) public {
+    function optimisticRollUp(
+        bytes32 prevRoot,
+        bytes32 nextRoot,
+        bytes32[] memory leaves,
+        bytes32[256][] memory siblings
+    ) public {
         Proposer storage proposer = proposers[msg.sender];
         // Check permission
-        require(hasRight(proposer), "Not allowed to propose");
+        require(proposable(proposer), "Not allowed to propose");
         // Save opru object
-        bytes32 id = keccak256(msg.data);
+        bytes32 id = keccak256(abi.encodePacked(prevRoot, nextRoot, leaves, siblings));
         candidates[id] = OptimisticRollUp(
             prevRoot,
-            newRoot,
+            nextRoot,
             msg.sender,
             0, // We can add fee here for the optimistic roll up submitter
-            block.number + this.challengePeriod,
+            block.number + challengePeriod,
             false
         );
         // Update exit allowance period
-        proposer.exitAllowance = block.number + this.challengePeriod;
+        proposer.exitAllowance = block.number + challengePeriod;
     }
 
     function finalize(bytes32 id) public {
         // Retrieve optimistic roll up data
         OptimisticRollUp memory opru = candidates[id];
         // Check the optimistic roll up to finalize is pointing the current root correctly
-        require(opru.prevRoot ==  root, "Roll up is pointing different root");
+        require(opru.prevRoot == root, "Roll up is pointing different root");
         // Update the current root
         root = opru.nextRoot;
         // Give fee
-        proposer.reward +=  opru.fee;
+        Proposer storage proposer = proposers[opru.submitter];
+        proposer.reward += opru.fee;
     }
 
-    function challenge(bytes32 prevRoot, bytes32 newRoot, bytes32[] memory leaves, bytes32[256][] memory siblings) public {
-        bytes32 id = keccak256(msg.data);
+    function challenge(bytes32 prevRoot, bytes32 nextRoot, bytes32[] memory leaves, bytes32[256][] memory siblings) public {
+        bytes32 id = keccak256(abi.encodePacked(prevRoot, nextRoot, leaves, siblings));
         OptimisticRollUp storage opru = candidates[id];
         // Check the optimistic roll up is in the challenge period
         require(opru.challengeDue > block.number, "You missed the challenge period");
@@ -86,7 +91,7 @@ contract OptimisticRollUp {
         // Check the optimistic rollup exists
         require(opru.submitter != address(0), "Not an existing rollup");
         // Check the state transition of the optimistic rollup is invalid
-        require(nextRoot !=  prevRoot.rollUp(leaves, siblings), "Valid roll up");
+        require(nextRoot != prevRoot.rollUp(leaves, siblings), "Valid roll up");
         // Since every condition of the challenge is passed, slash the submitter
         opru.slashed = true; // Record it as slashed;
         Proposer storage proposer = proposers[opru.submitter];
@@ -94,13 +99,13 @@ contract OptimisticRollUp {
         proposer.reward = 0;
     }
 
-    function hasRight(address proposerAddr) public view returns (bool) {
-       return hasRight(proposers[proposerAddr]);
+    function proposable(address proposerAddr) public view returns (bool) {
+        return proposable(proposers[proposerAddr]);
     }
 
-    function hasRight(Proposer memory  proposer) internal view returns (bool) {
+    function proposable(Proposer memory  proposer) internal view returns (bool) {
         // You can add more consensus logic here
-        if(proposer.stake <= this.minimumStake) {
+        if(proposer.stake <= minimumStake) {
             return false;
         } else {
             return true;
