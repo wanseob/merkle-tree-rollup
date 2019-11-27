@@ -79,7 +79,7 @@ library SMT256 {
         // Make sure it has been updated
         require(root != nextRoot, "Already exisiting leaf");
     }
-    
+
     function rollUp(RollUp memory proof) internal pure returns (bytes32) {
         // Inspect the RollUp structure
         require(proof.leaves.length == proof.siblings.length, "Both array should have same length");
