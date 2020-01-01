@@ -1,6 +1,6 @@
 {
   "name": "smt-rollup",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Sparse Merkle Tree roll up",
   "main": "dist/src/index.js",
   "types": "dist/index.d.ts",
