@@ -1,7 +1,4 @@
-pragma solidity >= 0.6.0;
-
-import { SMT256 } from "../contracts/SMT.sol";
-
+pragma solidity >= 0.5.0;
 
 contract Migrations {
     address public owner;

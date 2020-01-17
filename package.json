@@ -1,22 +1,16 @@
 {
-  "name": "smt-rollup",
+  "name": "merkle-tree-rollup",
   "version": "0.6.0",
-  "description": "Sparse Merkle Tree roll up",
-  "main": "dist/src/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Merkle Tree roll up library",
   "scripts": {
-    "test": "npm run testSolidity && npm run testTS",
-    "testSolidity": "./node_modules/.bin/truffle test",
-    "testTS": "mocha -r ts-node/register test/**/*.test.ts --timeout 5000",
-    "ts": "./node_modules/.bin/tsc",
-    "prettier": "./node_modules/.bin/prettier --single-quote --write --print-width 160 ./**/*.ts",
+    "test": "./node_modules/.bin/truffle test",
+    "prettier": "./node_modules/.bin/prettier --single-quote --write --print-width 160 ./**/*.js",
     "coverage": "./node_modules/.bin/solidity-coverage",
-    "web3TS": "./node_modules/.bin/truffle compile && typechain --target web3-v1 './build/**/*.json' --outDir src/contracts",
-    "truffleTS": "./node_modules/.bin/truffle compile && typechain --target truffle './build/**/*.json' --outDir src/types/truffle-contracts"
+    "generate-mimc": ""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/wilsonbeam/smt-rollup.git"
+    "url": "git+https://github.com/wilsonbeam/merkle-tree-rollup.git"
   },
   "keywords": [
     "SMT",
@@ -28,21 +22,16 @@
   "author": "Wilson Beam <wilsonbeam@protonmail.com>",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/wilsonbeam/smt-rollup/issues"
+    "url": "https://github.com/wilsonbeam/merkle-tree-rollup/issues"
   },
-  "homepage": "https://github.com/wilsonbeam/smt-rollup#readme",
+  "homepage": "https://github.com/wilsonbeam/merkle-tree-rollup#readme",
   "devDependencies": {
-    "@types/bn.js": "^4.11.5",
-    "@types/chai": "^4.2.4",
-    "@types/fs-extra": "^8.0.1",
-    "@types/levelup": "^3.1.1",
-    "@types/mocha": "^5.2.7",
-    "@types/rocksdb": "^3.0.0",
     "bignumber.js": "^9.0.0",
     "bn.js": "^4.11.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.2.0",
+    "circomlib": "0.0.20",
     "eth-gas-reporter": "^0.2.12",
     "ethlint": "^1.2.5",
     "fs-extra": "^8.1.0",
@@ -50,15 +39,11 @@
     "lint-staged": "^9.4.2",
     "mocha": "^6.2.2",
     "prettier": "^1.19.1",
-    "solc": "^0.5.13",
+    "semaphore-merkle-tree": "^1.0.8",
+    "solc": "^0.5.16",
     "solium": "^1.2.5",
     "truffle": "^5.1.6",
-    "truffle-typings": "^1.0.8",
-    "ts-node": "^8.5.0",
-    "typechain": "^1.0.3",
-    "typechain-target-truffle": "^1.0.0",
-    "typechain-target-web3-v1": "^1.0.2",
-    "typescript": "^3.7.2",
+    "truffle-artifactor": "^4.0.30",
     "web3": "^1.2.4",
     "web3-utils": "^1.2.4"
   },
@@ -77,9 +62,7 @@
       "git add"
     ]
   },
-  "dependencies": {
-    "level-rocksdb": "^4.0.0"
-  },
+  "dependencies": {},
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   }
