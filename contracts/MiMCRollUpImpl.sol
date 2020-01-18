@@ -1,6 +1,7 @@
 pragma solidity >= 0.6.0;
 
-import { Hasher, RollUpLib } from "./RollUpLib.sol";
+import { RollUpBase } from "./RollUpBase.sol";
+import { Tree } from "./RollUpLib.sol";
 
 library MiMC {
     /**
@@ -15,40 +16,8 @@ library MiMC {
     }
 }
 
-contract MiMCRollUpExample {
-    using RollUpLib for Hasher;
-
-    function rollUp(
-        uint prevRoot,
-        uint index,
-        uint[] memory leaves,
-        uint[] memory initialSiblings
-    ) public pure returns (uint) {
-        return mimcHasher().rollUp(prevRoot, index, leaves, initialSiblings);
-    }
-
-    function merkleProof(
-        uint root,
-        uint leaf,
-        uint index,
-        uint[] memory siblings
-    ) public pure returns (bool) {
-        return mimcHasher().merkleProof(root, leaf, index, siblings);
-    }
-
-    function merkleRoot(
-        uint leaf,
-        uint index,
-        uint[] memory siblings
-    ) public pure returns (uint) {
-        return mimcHasher().merkleRoot(leaf, index, siblings);
-    }
-
-    function mimcHasher() internal pure returns (Hasher memory) {
-        return Hasher(parentOf, preHashedZero());
-    }
-
-    function parentOf(uint256 left, uint256 right) public pure returns (uint256) {
+contract MiMCRollUpImpl is RollUpBase {
+    function parentOf(uint256 left, uint256 right) public override pure returns (uint256) {
         uint k = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         uint R = 0;
         uint C = 0;
@@ -62,7 +31,7 @@ contract MiMCRollUpExample {
         return R;
     }
 
-    function preHashedZero() public pure returns (uint[] memory preHashed) {
+    function preHashedZero() public override pure returns (uint[] memory preHashed) {
         preHashed = new uint[](32);
         preHashed[0] = 0;
         preHashed[1] = 20636625426020718969131298365984859231982649550971729229988535915544421356929;
@@ -96,29 +65,5 @@ contract MiMCRollUpExample {
         preHashed[29] = 18173414435841866346435646879016412700973102443995503160340118818770908449021;
         preHashed[30] = 1684117701874574052474687836292170148751601456481610409096174606023255461470;
         preHashed[31] = 15545313534057078925780542540989871893874743830293027221182247788840178762050;
-    }
-}
-
-contract MiMCOPRUChallenge is MiMCRollUpExample {
-    using RollUpLib for Hasher;
-
-    uint public root;
-    uint public index;
-    constructor(uint _root, uint _index) public {
-        root = _root;
-        index = _index;
-    }
-
-    uint[] appended;
-
-    function addItems(
-        uint[] memory leaves,
-        uint[] memory initialSiblings
-    ) public returns (uint) {
-        root = mimcHasher().rollUp(root, index, leaves, initialSiblings);
-        index += leaves.length;
-        for(uint i = 0; i < leaves.length; i++) {
-            appended.push(leaves[i]);
-        }
     }
 }

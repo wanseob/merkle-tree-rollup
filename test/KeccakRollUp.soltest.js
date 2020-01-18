@@ -1,36 +1,40 @@
 const chai = require('chai');
 const { storage, hashers, tree } = require('semaphore-merkle-tree');
-const MiMCRollUp = artifacts.require('MiMCRollUpImpl');
-const MiMC = artifacts.require('MiMC');
+const KeccakRollUp = artifacts.require('KeccakRollUpImpl');
 
 chai.use(require('chai-bignumber')(web3.utils.BN)).should();
 
-contract('MiMC roll up test', async accounts => {
-  let mimcRollUp;
+const keccakHasher = {
+  hash: (_, left, right) => {
+    return web3.utils.toBN(web3.utils.soliditySha3(left, right));
+  }
+};
+contract('Keccak roll up test', async accounts => {
+  let keccakRollUp;
   let merkleTree;
 
   beforeEach(async () => {
-    mimcRollUp = await MiMCRollUp.deployed();
-    merkleTree = new tree.MerkleTree('semaphore', new storage.MemStorage(), new hashers.MimcSpongeHasher(), 31, '0');
+    keccakRollUp = await KeccakRollUp.new();
+    merkleTree = new tree.MerkleTree('semaphore', new storage.MemStorage(), keccakHasher, 31, '0');
   });
 
   it('The pre hashed zero should be the initial merkle tree root value', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
+    let zeroes = await keccakRollUp.preHashedZero();
     let initialRoot = await merkleTree.root();
     initialRoot.should.equal(zeroes[31].toString());
   });
 
   it('parentOf zero hashes should return the same result with the PreHashedZero values', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
+    let zeroes = await keccakRollUp.preHashedZero();
     for (let i = 1; i < 32; i++) {
-      let parentZero = await mimcRollUp.parentOf(zeroes[i - 1], zeroes[i - 1]);
+      let parentZero = await keccakRollUp.parentOf(zeroes[i - 1], zeroes[i - 1]);
       parentZero.toString().should.equal(zeroes[i].toString());
     }
   });
 
   it('The pre hashed zero should be the initial merkle tree root value', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
-    let initialRootMerkleProof = await mimcRollUp.merkleProof(zeroes[31], zeroes[0], 0, zeroes.slice(0, 31));
+    let zeroes = await keccakRollUp.preHashedZero();
+    let initialRootMerkleProof = await keccakRollUp.merkleProof(zeroes[31], zeroes[0], 0, zeroes.slice(0, 31));
     initialRootMerkleProof.should.equal(true);
   });
 
@@ -43,7 +47,7 @@ contract('MiMC roll up test', async accounts => {
     }
     let targetIndex = 0;
     let merkleProof = await merkleTree.path(targetIndex);
-    let proof = await mimcRollUp.merkleProof(merkleProof.root, merkleProof.element, targetIndex, merkleProof.path_elements);
+    let proof = await keccakRollUp.merkleProof(merkleProof.root, merkleProof.element, targetIndex, merkleProof.path_elements);
     proof.should.equal(true);
   });
 
@@ -51,24 +55,24 @@ contract('MiMC roll up test', async accounts => {
     let merkleProof = await merkleTree.path(0);
     let items = [1, 2, 3];
     let prevRoot = await merkleTree.root();
-    let rolledUpRoot = await mimcRollUp.rollUp(prevRoot, 0, items, merkleProof.path_elements, { gas: 6700000 });
+    let rolledUpRoot = await keccakRollUp.rollUp(prevRoot, 0, items, merkleProof.path_elements, { gas: 6700000 });
     for (let i = 0; i < items.length; i++) {
       await merkleTree.update(i, items[i]);
     }
     let newRoot = await merkleTree.root();
-    newRoot.should.equal(rolledUpRoot.toString());
+    newRoot.toString().should.equal(rolledUpRoot.toString());
   });
 
   it('push should return the correct merkle root after appending some items', async () => {
     let merkleProof = await merkleTree.path(0);
-    let items = [1];
+    let items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     let prevRoot = await merkleTree.root();
     for (let i = 0; i < items.length; i++) {
       await merkleTree.update(i, items[i]);
     }
     let newRoot = await merkleTree.root();
-    await mimcRollUp.push(items, merkleProof.path_elements, { gas: 6700000 });
-    let updatedTree = await mimcRollUp.tree();
+    await keccakRollUp.push(items, merkleProof.path_elements, { gas: 6700000 });
+    let updatedTree = await keccakRollUp.tree();
     updatedTree.root.toString().should.equal(newRoot.toString());
   });
 });

@@ -1,28 +1,14 @@
 pragma solidity >= 0.6.0;
 
 import { Hasher, RollUpLib } from "./RollUpLib.sol";
+import { RollUpBase } from "./RollUpBase.sol";
 
-contract KeccakRollUpExample {
-    using RollUpLib for Hasher;
-
-    function rollUp(
-        uint prevRoot,
-        uint index,
-        uint[] memory leaves,
-        uint[] memory initialSiblings
-    ) public pure returns (uint) {
-        return hasher().rollUp(prevRoot, index, leaves, initialSiblings);
-    }
-
-    function hasher() internal pure returns (Hasher memory) {
-        return Hasher(parentOf, preHashedZero());
-    }
-
-    function parentOf(uint left, uint right) public pure returns (uint) {
+contract KeccakRollUpImpl is RollUpBase {
+    function parentOf(uint left, uint right) public override pure returns (uint) {
         return uint(keccak256(abi.encodePacked(left, right)));
     }
 
-    function preHashedZero() public pure returns (uint[] memory preHashed) {
+    function preHashedZero() public override pure returns (uint[] memory preHashed) {
         preHashed = new uint[](32);
         preHashed[0] = 0x0000000000000000000000000000000000000000000000000000000000000000;
         preHashed[1] = 0xad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb5;
