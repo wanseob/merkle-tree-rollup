@@ -1,5 +1,5 @@
 const MiMC = artifacts.require('MiMC');
-const MiMCRollUp = artifacts.require('MiMCRollUpImpl');
+const MiMCRollUp = artifacts.require('MiMCRollUp');
 
 module.exports = function(deployer) {
   deployer.link(MiMC, MiMCRollUp);

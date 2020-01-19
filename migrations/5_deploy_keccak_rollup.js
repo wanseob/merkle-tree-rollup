@@ -1,4 +1,4 @@
-const KeccakRollUp = artifacts.require('KeccakRollUpImpl');
+const KeccakRollUp = artifacts.require('KeccakRollUp');
 
 module.exports = function(deployer) {
   deployer.deploy(KeccakRollUp);

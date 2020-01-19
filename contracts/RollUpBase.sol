@@ -1,23 +1,9 @@
 pragma solidity >= 0.6.0;
 
-import { Tree, Hasher, RollUpLib } from "./RollUpLib.sol";
+import { Hasher, RollUpLib } from "./RollUpLib.sol";
 
 abstract contract RollUpBase {
     using RollUpLib for Hasher;
-
-    Tree public tree;
-
-    constructor() public {
-        uint[] memory zeroes = preHashedZero();
-        tree.root = zeroes[zeroes.length - 1];
-    }
-
-    function push(uint[] memory leaves, uint[] memory initialSiblings) public {
-        uint newRoot = rollUp(tree.root, tree.index, leaves, initialSiblings);
-        tree.root = newRoot;
-        tree.index += leaves.length;
-    }
-
 
     function rollUp(
         uint prevRoot,

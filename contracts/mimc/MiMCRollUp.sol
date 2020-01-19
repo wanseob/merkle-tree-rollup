@@ -1,7 +1,6 @@
 pragma solidity >= 0.6.0;
 
-import { RollUpBase } from "./RollUpBase.sol";
-import { Tree } from "./RollUpLib.sol";
+import { RollUpBase } from "../RollUpBase.sol";
 
 library MiMC {
     /**
@@ -16,7 +15,7 @@ library MiMC {
     }
 }
 
-contract MiMCRollUpImpl is RollUpBase {
+contract MiMCRollUp is RollUpBase {
     function parentOf(uint256 left, uint256 right) public override pure returns (uint256) {
         uint k = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         uint R = 0;

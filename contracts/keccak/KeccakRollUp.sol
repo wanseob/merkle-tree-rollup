@@ -1,9 +1,8 @@
 pragma solidity >= 0.6.0;
 
-import { Hasher, RollUpLib } from "./RollUpLib.sol";
-import { RollUpBase } from "./RollUpBase.sol";
+import { RollUpBase } from "../RollUpBase.sol";
 
-contract KeccakRollUpImpl is RollUpBase {
+contract KeccakRollUp is RollUpBase {
     function parentOf(uint left, uint right) public override pure returns (uint) {
         return uint(keccak256(abi.encodePacked(left, right)));
     }

@@ -1,7 +1,6 @@
 const chai = require('chai');
 const { storage, hashers, tree } = require('semaphore-merkle-tree');
-const MiMCRollUp = artifacts.require('MiMCRollUpImpl');
-const MiMC = artifacts.require('MiMC');
+const MiMCRollUp = artifacts.require('MiMCRollUp');
 
 chai.use(require('chai-bignumber')(web3.utils.BN)).should();
 
@@ -57,18 +56,5 @@ contract('MiMC roll up test', async accounts => {
     }
     let newRoot = await merkleTree.root();
     newRoot.should.equal(rolledUpRoot.toString());
-  });
-
-  it('push should return the correct merkle root after appending some items', async () => {
-    let merkleProof = await merkleTree.path(0);
-    let items = [1];
-    let prevRoot = await merkleTree.root();
-    for (let i = 0; i < items.length; i++) {
-      await merkleTree.update(i, items[i]);
-    }
-    let newRoot = await merkleTree.root();
-    await mimcRollUp.push(items, merkleProof.path_elements, { gas: 6700000 });
-    let updatedTree = await mimcRollUp.tree();
-    updatedTree.root.toString().should.equal(newRoot.toString());
   });
 });
