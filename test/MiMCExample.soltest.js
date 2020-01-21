@@ -1,35 +1,35 @@
 const chai = require('chai');
 const { storage, hashers, tree } = require('semaphore-merkle-tree');
-const MiMCRollUp = artifacts.require('MiMCRollUp');
+const MiMCRollUp = artifacts.require('MiMCExample');
 
 chai.use(require('chai-bignumber')(web3.utils.BN)).should();
 
-contract('MiMC roll up test', async accounts => {
-  let mimcRollUp;
+contract('MiMC Example Test', async accounts => {
+  let rollUpTree;
   let merkleTree;
 
   beforeEach(async () => {
-    mimcRollUp = await MiMCRollUp.deployed();
+    rollUpTree = await MiMCRollUp.deployed();
     merkleTree = new tree.MerkleTree('semaphore', new storage.MemStorage(), new hashers.MimcSpongeHasher(), 31, '0');
   });
 
   it('The pre hashed zero should be the initial merkle tree root value', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
+    let zeroes = await rollUpTree.preHashedZero();
     let initialRoot = await merkleTree.root();
     initialRoot.should.equal(zeroes[31].toString());
   });
 
   it('parentOf zero hashes should return the same result with the PreHashedZero values', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
+    let zeroes = await rollUpTree.preHashedZero();
     for (let i = 1; i < 32; i++) {
-      let parentZero = await mimcRollUp.parentOf(zeroes[i - 1], zeroes[i - 1]);
+      let parentZero = await rollUpTree.parentOf(zeroes[i - 1], zeroes[i - 1]);
       parentZero.toString().should.equal(zeroes[i].toString());
     }
   });
 
   it('The pre hashed zero should be the initial merkle tree root value', async () => {
-    let zeroes = await mimcRollUp.preHashedZero();
-    let initialRootMerkleProof = await mimcRollUp.merkleProof(zeroes[31], zeroes[0], 0, zeroes.slice(0, 31));
+    let zeroes = await rollUpTree.preHashedZero();
+    let initialRootMerkleProof = await rollUpTree.merkleProof(zeroes[31], zeroes[0], 0, zeroes.slice(0, 31));
     initialRootMerkleProof.should.equal(true);
   });
 
@@ -42,7 +42,7 @@ contract('MiMC roll up test', async accounts => {
     }
     let targetIndex = 0;
     let merkleProof = await merkleTree.path(targetIndex);
-    let proof = await mimcRollUp.merkleProof(merkleProof.root, merkleProof.element, targetIndex, merkleProof.path_elements);
+    let proof = await rollUpTree.merkleProof(merkleProof.root, merkleProof.element, targetIndex, merkleProof.path_elements);
     proof.should.equal(true);
   });
 
@@ -50,7 +50,7 @@ contract('MiMC roll up test', async accounts => {
     let merkleProof = await merkleTree.path(0);
     let items = [1, 2, 3];
     let prevRoot = await merkleTree.root();
-    let rolledUpRoot = await mimcRollUp.rollUp(prevRoot, 0, items, merkleProof.path_elements, { gas: 6700000 });
+    let rolledUpRoot = await rollUpTree.rollUp(prevRoot, 0, items, merkleProof.path_elements, { gas: 6700000 });
     for (let i = 0; i < items.length; i++) {
       await merkleTree.update(i, items[i]);
     }

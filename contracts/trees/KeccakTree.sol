@@ -1,8 +1,15 @@
 pragma solidity >= 0.6.0;
 
-import { RollUpBase } from "../RollUpBase.sol";
+import { RollUpTree } from "../library/RollUpTree.sol";
 
-contract KeccakRollUp is RollUpBase {
+/**
+ * @title Roll up contract for 32 depth Merkle Tree with Keccak256 hash function
+ * @author Wilson Beam
+ * @notice You can use this contract for append only purpose. If you need to update
+ *         any leaf with roll up, you have to use sparse merkle.
+ *         Please check https://github.com/wilsonbeam/smt-rollup
+ */
+contract KeccakTree is RollUpTree {
     function parentOf(uint left, uint right) public override pure returns (uint) {
         return uint(keccak256(abi.encodePacked(left, right)));
     }
