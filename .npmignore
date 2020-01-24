@@ -1,2 +1,5 @@
-tsconfig.json
 src
+build/*
+.github/
+.vscode/
+.idea/
