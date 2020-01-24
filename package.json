@@ -62,8 +62,5 @@
       "git add"
     ]
   },
-  "dependencies": {},
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  }
+  "dependencies": {}
 }
