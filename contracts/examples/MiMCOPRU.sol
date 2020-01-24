@@ -1,5 +1,4 @@
 pragma solidity >= 0.6.0;
-
 import { Tree } from "../library/Types.sol";
 import { MiMCTree } from "../trees/MiMCTree.sol";
 import { StorageRollUpLib } from "../library/StorageRollUpLib.sol";
@@ -9,18 +8,30 @@ contract MiMCOPRU is StorageRollUpBase, MiMCTree {
     Tree tree;
 
     struct Submission {
-        Tree prevTree;
-        Tree newTree;
+        uint startingRoot;
+        uint startingIndex;
+        uint targetingRoot;
+        uint targetingIndex;
+        bytes32 mergedLeaves;
         address submitter;
         uint challengeDue;
         bool slashed;
     }
 
-    mapping(bytes32=>Submission) submissions;
-    mapping(address=>bool) slashed;
+    event NewSubmission(uint id);
+    event Slashed(uint opruId, address submitter, address challenger);
 
-    uint constant public challengePeriod = 0;
+    uint index = 0;
+    mapping(uint=>Submission) public submissions;
+    mapping(address=>bool) public slashedSubmissionters;
+
+    uint constant public challengePeriod = 15;
     constructor() public {
+        tree = newTree();
+    }
+
+    function timestamp() public view returns (uint) {
+        return now;
     }
 
     function submitOPRU(
@@ -28,48 +39,49 @@ contract MiMCOPRU is StorageRollUpBase, MiMCTree {
         uint startingIndex,
         uint[] memory leaves,
         uint targetingRoot
-    ) public {
-        require(!slashed[msg.sender], "Not allowed to submit");
-        bytes32 opruId = keccak256(abi.encodePacked(startingRoot, startingIndex, leaves, targetingRoot));
+    ) public returns (uint opruId) {
+        opruId = index++;
+        require(!slashedSubmissionters[msg.sender], "Not allowed to submit");
         submissions[opruId] = Submission(
-            Tree(startingRoot, startingIndex),
-            Tree(targetingRoot, startingIndex + leaves.length),
+            startingRoot,
+            startingIndex,
+            targetingRoot,
+            startingIndex + leaves.length,
+            StorageRollUpLib.mergeLeaves(bytes32(0), leaves),
             msg.sender,
             now + challengePeriod,
             false
         );
+        emit NewSubmission(opruId);
     }
 
-    function finalizeOPRU(bytes32 opruId) public {
-        Submission storage submission = submissions[opruId];
+    function finalizeOPRU(uint id) public {
+        Submission storage submission = submissions[id];
         require(!submission.slashed, "Submission is slashed");
-        require(submission.challengeDue <= now, "Can't finalized");
+        require(submission.challengeDue <= now, "Still in the challenge period");
         require(
-            submission.prevTree.root == tree.root && submission.prevTree.index == tree.index,
+            submission.startingRoot == tree.root && submission.startingIndex == tree.index,
             "Current tree is different with the submission's prev tree"
         );
-        tree = submission.newTree;
+        tree.root = submission.targetingRoot;
+        tree.index = submission.targetingIndex;
     }
 
-    function challengeOPRU(
-        uint storageRollUpId,
-        uint startingRoot,
-        uint startingIndex,
-        uint[] memory leaves,
-        uint targetingRoot
-    ) public {
-        bytes32 opruId = keccak256(abi.encodePacked(startingRoot, startingIndex, leaves, targetingRoot));
-        Submission storage submission = submissions[opruId];
+    function challengeOPRU(uint submissionId, uint rollUpId) public {
+        Submission storage submission = submissions[submissionId];
         require(!submission.slashed, "Already slashed");
         require(submission.challengeDue > now, "Not in the challenge period");
-        bool verification = verifyRollUp(storageRollUpId, startingRoot, startingIndex, leaves, targetingRoot);
+        bool verification = verifyRollUp(
+            rollUpId,
+            submission.startingRoot,
+            submission.startingIndex,
+            submission.targetingRoot,
+            submission.mergedLeaves
+        );
         if(!verification) {
+            // Implement slash logic here
             submission.slashed = true;
-            slash(submission.submitter);
+            emit Slashed(submissionId, submission.submitter, msg.sender);
         }
-    }
-
-    function slash(address submitter) private {
-        // Do slash here
     }
 }

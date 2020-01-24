@@ -64,21 +64,18 @@ library RollUpLib {
         uint index,
         uint[] memory siblings
     ) internal pure returns (bool) {
-        uint[] memory siblingsOflastLeaf = siblings;
         uint path = index;
-        uint preHashedZero;
         for(uint i = 0; i < siblings.length; i++) {
-            preHashedZero = self.preHashedZero[i];
             if(path & 1 == 0) {
                 // Right sibling should be a prehashed zero
-                if(siblings[i] != preHashedZero) return false;
+                if(siblings[i] != self.preHashedZero[i]) return false;
             } else {
                 // Left sibling should not be a prehashed zero
-                if(siblings[i] == preHashedZero) return false;
+                if(siblings[i] == self.preHashedZero[i]) return false;
             }
             path >>= 1;
         }
-        return merkleProof(self, root, index, self.preHashedZero[0], siblingsOflastLeaf);
+        return merkleProof(self, root, self.preHashedZero[0], index, siblings);
     }
 
     function _append(

@@ -19,15 +19,16 @@ library StorageRollUpLib {
         uint[] memory initialSiblings
    ) internal {
         require(!sRollUp.initialized, "Already initialized");
-        require(self._startingLeafProof(startingRoot, index, initialSiblings), "Invalid merkle proof of starting leaf node");
+        require(self._startingLeafProof(startingRoot, index, initialSiblings), "Invalid merkle proof of the starting leaf node");
         sRollUp.start.root = startingRoot;
         sRollUp.result.root = startingRoot;
         sRollUp.start.index = index;
         sRollUp.result.index = index;
         sRollUp.mergedLeaves = bytes32(0);
         for(uint i = 0; i < initialSiblings.length; i++) {
-            sRollUp.siblings[i] = initialSiblings[i];
+            sRollUp.siblings.push(initialSiblings[i]);
         }
+        sRollUp.initialized = true;
     }
 
     function appendToStorageRollUp(
@@ -37,13 +38,12 @@ library StorageRollUpLib {
     ) internal {
         require(sRollUp.initialized, "Not initialized");
         uint nextIndex = sRollUp.result.index;
-        bytes32 mergedLeaves = sRollUp.mergedLeaves;
         uint[] memory nextSiblings = sRollUp.siblings;
         uint newRoot;
         for(uint i = 0; i < leaves.length; i++) {
             (newRoot, nextIndex, nextSiblings) = self._append(nextIndex, leaves[i], nextSiblings);
-            mergedLeaves = keccak256(abi.encodePacked(mergedLeaves, leaves[i]));
         }
+        bytes32 mergedLeaves = mergeLeaves(sRollUp.mergedLeaves, leaves);
         for(uint i = 0; i < nextSiblings.length; i++) {
             sRollUp.siblings[i] = nextSiblings[i];
         }
@@ -56,17 +56,21 @@ library StorageRollUpLib {
         StorageRollUp memory self,
         uint startingRoot,
         uint startingIndex,
-        uint[] memory leaves,
-        uint targetingRoot
+        uint targetingRoot,
+        bytes32 mergedLeaves
     ) internal pure returns (bool) {
         require(self.initialized, "Not an initialized storage roll up");
         require(self.start.root == startingRoot, "Starting root is different");
         require(self.start.index == startingIndex, "Starting index is different");
-        bytes32 mergedLeaves;
-        for(uint i = 0; i < leaves.length; i ++) {
-            mergedLeaves = keccak256(abi.encodePacked(mergedLeaves, leaves[i]));
-        }
         require(self.mergedLeaves == mergedLeaves, "Appended leaves are different");
         return self.result.root == targetingRoot;
+    }
+
+    function mergeLeaves(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
+        bytes32 merged = base;
+        for(uint i = 0; i < leaves.length; i ++) {
+            merged = keccak256(abi.encodePacked(merged, leaves[i]));
+        }
+        return merged;
     }
 }

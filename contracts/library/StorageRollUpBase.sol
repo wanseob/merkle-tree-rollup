@@ -14,9 +14,13 @@ import { RollUpTree } from "./RollUpTree.sol";
 abstract contract StorageRollUpBase is RollUpTree {
     using StorageRollUpLib for StorageRollUp;
     using StorageRollUpLib for Hasher;
+    using StorageRollUpLib for bytes32;
+
+    event NewStorageRollUp(uint id);
 
     mapping(uint=>StorageRollUp) rollUps;
-    uint index;
+    mapping(uint=>mapping(address=>bool)) permitted;
+    uint sRollUpIndex;
 
     constructor() public {
     }
@@ -26,11 +30,11 @@ abstract contract StorageRollUpBase is RollUpTree {
         uint startingIndex,
         uint[] memory initialSiblings
     ) public virtual returns (uint id){
-        id = index;
+        id = sRollUpIndex++;
         StorageRollUp storage rollUp = rollUps[id];
         hasher().initStorageRollUp(rollUp, startingRoot, startingIndex, initialSiblings);
-        rollUp.manager = msg.sender;
-        index += 1;
+        permitted[id][msg.sender] = true;
+        emit NewStorageRollUp(id);
     }
 
     function append(
@@ -38,7 +42,7 @@ abstract contract StorageRollUpBase is RollUpTree {
         uint[] memory leaves
     ) public virtual {
         StorageRollUp storage rollUp = rollUps[id];
-        require(msg.sender == rollUp.manager, "Update is only allowed to the rollUp creater");
+        require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
         hasher().appendToStorageRollUp(rollUp, leaves);
     }
 
@@ -49,10 +53,22 @@ abstract contract StorageRollUpBase is RollUpTree {
         uint rollUpId,
         uint startingRoot,
         uint startingIndex,
-        uint[] memory leaves,
-        uint targetingRoot
+        uint targetingRoot,
+        bytes32 mergedLeaves
     ) public view returns (bool) {
         StorageRollUp storage rollUp = rollUps[rollUpId];
-        return rollUp.verify(startingRoot, startingIndex, leaves, targetingRoot);
+        return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
+    }
+
+    function verifyRollUp(
+        uint rollUpId,
+        uint startingRoot,
+        uint startingIndex,
+        uint targetingRoot,
+        uint[] memory leaves
+    ) public view returns (bool) {
+        StorageRollUp storage rollUp = rollUps[rollUpId];
+        bytes32 mergedLeaves = bytes32(0).mergeLeaves(leaves);
+        return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
     }
 }

@@ -27,7 +27,7 @@
   "homepage": "https://github.com/wilsonbeam/merkle-tree-rollup#readme",
   "devDependencies": {
     "bignumber.js": "^9.0.0",
-    "bn.js": "^4.11.0",
+    "bn.js": "^4.11.8",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "chai-bn": "^0.2.0",
