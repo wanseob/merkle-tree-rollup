@@ -17,7 +17,7 @@ library StorageRollUpLib {
         uint startingRoot,
         uint index,
         uint[] memory initialSiblings
-   ) internal {
+    ) internal {
         require(!sRollUp.initialized, "Already initialized");
         require(self._startingLeafProof(startingRoot, index, initialSiblings), "Invalid merkle proof of the starting leaf node");
         sRollUp.start.root = startingRoot;
@@ -31,6 +31,9 @@ library StorageRollUpLib {
         sRollUp.initialized = true;
     }
 
+    /**
+     * @dev Append given leaves to the storage roll up and store it.
+     */
     function appendToStorageRollUp(
         Hasher memory self,
         StorageRollUp storage sRollUp,
@@ -52,6 +55,10 @@ library StorageRollUpLib {
         sRollUp.result.index = nextIndex;
     }
 
+    /**
+     * @dev Check the given parameters roll up assertion is true based on
+     *      its storage roll up result
+     */
     function verify(
         StorageRollUp memory self,
         uint startingRoot,
@@ -66,6 +73,11 @@ library StorageRollUpLib {
         return self.result.root == targetingRoot;
     }
 
+    /**
+     * @dev Appended leaves will be merged into a single bytes32 value sequentially
+     *      and that will be used to validate the correct sequence of the total
+     *      appended leaves through multiple transactions.
+     */
     function mergeLeaves(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
         bytes32 merged = base;
         for(uint i = 0; i < leaves.length; i ++) {

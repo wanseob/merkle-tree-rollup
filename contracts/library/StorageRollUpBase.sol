@@ -25,6 +25,11 @@ abstract contract StorageRollUpBase is RollUpTree {
     constructor() public {
     }
 
+    /**
+     * @dev Create a new roll up object and store it. It requires the valid
+     *      sibling data to start the roll up. The starting leaf and every leaf
+     *      behind that should be the empty leaves.
+     */
     function newRollUp(
         uint startingRoot,
         uint startingIndex,
@@ -37,29 +42,22 @@ abstract contract StorageRollUpBase is RollUpTree {
         emit NewStorageRollUp(id);
     }
 
+    /**
+     * @dev Update the storage roll up by appending given leaves.
+     *      Only the creator is allowed to append new leaves.
+     */
     function append(
-        uint id,
+        uint rollUpId,
         uint[] memory leaves
     ) public virtual {
-        StorageRollUp storage rollUp = rollUps[id];
-        require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
+        StorageRollUp storage rollUp = rollUps[rollUpId];
+        require(permitted[rollUpId][msg.sender], "Not permitted to update the given storage roll up");
         hasher().appendToStorageRollUp(rollUp, leaves);
     }
 
     /**
-     * @return It returns true when the roll up is valid.
+     * @return It returns the validity of the storage roll up
      */
-    function verifyRollUp(
-        uint rollUpId,
-        uint startingRoot,
-        uint startingIndex,
-        uint targetingRoot,
-        bytes32 mergedLeaves
-    ) public view returns (bool) {
-        StorageRollUp storage rollUp = rollUps[rollUpId];
-        return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
-    }
-
     function verifyRollUp(
         uint rollUpId,
         uint startingRoot,
@@ -69,6 +67,20 @@ abstract contract StorageRollUpBase is RollUpTree {
     ) public view returns (bool) {
         StorageRollUp storage rollUp = rollUps[rollUpId];
         bytes32 mergedLeaves = bytes32(0).mergeLeaves(leaves);
+        return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
+    }
+
+    /**
+     * @return It returns the validity of the storage roll up
+     */
+    function verifyRollUp(
+        uint rollUpId,
+        uint startingRoot,
+        uint startingIndex,
+        uint targetingRoot,
+        bytes32 mergedLeaves
+    ) internal view returns (bool) {
+        StorageRollUp storage rollUp = rollUps[rollUpId];
         return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
     }
 }

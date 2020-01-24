@@ -53,6 +53,9 @@ library RollUpLib {
         return merkleRoot(self, leaf, index, siblings) == root;
     }
 
+    /**
+     * @dev It returns an initialized merkle tree which leaves are all empty.
+     */
     function newTree(Hasher memory hasher) internal pure returns (Tree memory tree) {
         tree.root = hasher.preHashedZero[hasher.preHashedZero.length - 1];
         tree.index = 0;
