@@ -160,6 +160,13 @@ function newTree(Hasher memory hasher) internal pure returns (Tree memory tree) 
 
 Even the custom hash function is too expensive, you can roll up many leaves using storage. It stores the intermediate siblings instead of validating the merkle proof everytime. Especially if the hash function is more expensive than 5000 gas using this implementation will help the scalability.
 
+Usually it should be used with the following steps.
+
+1. Create a new roll up using `newRollUp`.
+2. Append items using `append`.
+3. Verify an optimistic roll up based on the storage roll up using `verifyRollUp`
+4. Delete the storage roll up after verifying the targetting optimistic roll up using `deleteRollUp`.
+
 ```solidity
 /**
  * @dev Create a new roll up object and store it. It requires the valid
@@ -180,6 +187,12 @@ function append(
     uint rollUpId,
     uint[] memory leaves
 ) public virtual;
+
+
+/**
+ * @dev The storage roll up creator can delete it to get refund gas cost.
+ */
+function deleteRollUp(uint rollUpId) public;
 
 /**
  * @return It returns the validity of the storage roll up

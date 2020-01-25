@@ -1,7 +1,6 @@
 pragma solidity >= 0.6.0;
 import { Tree } from "../library/Types.sol";
 import { MiMCTree } from "../trees/MiMCTree.sol";
-import { StorageRollUpLib } from "../library/StorageRollUpLib.sol";
 import { StorageRollUpBase } from "../library/StorageRollUpBase.sol";
 
 contract MiMCOPRU is StorageRollUpBase, MiMCTree {
@@ -47,7 +46,7 @@ contract MiMCOPRU is StorageRollUpBase, MiMCTree {
             startingIndex,
             targetingRoot,
             startingIndex + leaves.length,
-            StorageRollUpLib.mergeLeaves(bytes32(0), leaves),
+            mergeLeaves(leaves),
             msg.sender,
             now + challengePeriod,
             false

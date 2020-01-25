@@ -56,6 +56,15 @@ abstract contract StorageRollUpBase is RollUpTree {
     }
 
     /**
+     * @dev The storage roll up creator can delete it to get refund gas cost.
+     */
+    function deleteRollUp(uint rollUpId) public {
+        require(permitted[rollUpId][msg.sender], "Not permitted to update the given storage roll up");
+        delete rollUps[rollUpId];
+        delete permitted[rollUpId][msg.sender];
+    }
+
+    /**
      * @return It returns the validity of the storage roll up
      */
     function verifyRollUp(
@@ -65,9 +74,8 @@ abstract contract StorageRollUpBase is RollUpTree {
         uint targetingRoot,
         uint[] memory leaves
     ) public view returns (bool) {
-        StorageRollUp storage rollUp = rollUps[rollUpId];
         bytes32 mergedLeaves = bytes32(0).mergeLeaves(leaves);
-        return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
+        return verifyRollUp(rollUpId, startingRoot, startingIndex, targetingRoot, mergedLeaves);
     }
 
     /**
@@ -81,6 +89,11 @@ abstract contract StorageRollUpBase is RollUpTree {
         bytes32 mergedLeaves
     ) internal view returns (bool) {
         StorageRollUp storage rollUp = rollUps[rollUpId];
+        require(rollUp.initialized, "Not an initialized roll up");
         return rollUp.verify(startingRoot, startingIndex, targetingRoot, mergedLeaves);
+    }
+
+    function mergeLeaves(uint[] memory leaves) public pure returns (bytes32) {
+        return bytes32(0).mergeLeaves(leaves);
     }
 }

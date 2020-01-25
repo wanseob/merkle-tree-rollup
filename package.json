@@ -58,7 +58,6 @@
       "git add"
     ],
     "contracts/**/*.{sol}": [
-      "solium -d contracts/ --fix",
       "git add"
     ]
   },
