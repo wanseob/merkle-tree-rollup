@@ -45,73 +45,55 @@ contract.only('MiMC OPRU Test', async accounts => {
   });
 
   describe('Valid optimistic roll up', async () => {
-    let submissionId;
+    let proposalId;
     let challengeDue;
     it('should emit an event when new optimistic roll up is submitted', async () => {
-      let submission = await mimcOPRU.submitOPRU(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.leaves, validRollUp.targetingRoot);
-      submissionId = submission.logs[0].args.id;
-      submissionId.should.be.a.bignumber.that.is.zero;
-      challengeDue = (await mimcOPRU.submissions(submissionId)).challengeDue.toNumber();
+      let proposal = await mimcOPRU.propose(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.leaves, validRollUp.targetingRoot);
+      proposalId = proposal.logs[0].args.id;
+      proposalId.should.be.a.bignumber.that.is.zero;
+      challengeDue = (await mimcOPRU.getProposal(proposalId)).challengeDue.toNumber();
     });
     it('should reject the finalization request until its challenge period', async () => {
-      await expect(mimcOPRU.finalizeOPRU(submissionId)).to.be.rejected;
+      await expect(mimcOPRU.finalize(proposalId)).to.be.rejected;
     });
     it('should fulfill the finalization after its challenge period', async () => {
       while (parseInt(new Date().getTime() / 1000) <= challengeDue);
-      await expect(mimcOPRU.finalizeOPRU(submissionId)).to.be.fulfilled;
+      await expect(mimcOPRU.finalize(proposalId)).to.be.fulfilled;
     });
   });
-  describe('Invalid OPRU will get reverted by the storage based roll up challenge', async () => {
-    describe('How storage base roll up works', async () => {
+  describe('Invalid OPRU will get reverted by the challenge', async () => {
+    describe('How challenge roll up works', async () => {
       let rollUpId;
       it('should emit an event when it starts a new storage based roll up', async () => {
-        let rollUp = await mimcOPRU.newRollUp(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.initialSiblings);
+        let rollUp = await mimcOPRU.newOPRU(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.initialSiblings);
         rollUpId = rollUp.logs[0].args.id;
         rollUpId.should.be.a.bignumber.that.is.zero;
       });
       it('should be able to append all items with multiple transactions', async () => {
-        await mimcOPRU.append(rollUpId, validRollUp.leaves.slice(0, 3));
-        await mimcOPRU.append(rollUpId, validRollUp.leaves.slice(3, 6));
-        await mimcOPRU.append(rollUpId, validRollUp.leaves.slice(6, 9));
-        await mimcOPRU.append(rollUpId, validRollUp.leaves.slice(9, 10));
-      });
-      it('should return true for the storage roll up', async () => {
-        let result = await mimcOPRU.verifyRollUp(rollUpId, validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.targetingRoot, validRollUp.leaves);
-        result.should.equal(true);
-      });
-      it('should abort when invalid leaves are given for a storage roll up', async () => {
-        await expect(mimcOPRU.verifyRollUp(rollUpId, validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.targetingRoot, invalidRollUp.leaves)).to
-          .be.rejected;
+        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(0, 3));
+        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(3, 6));
+        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(6, 9));
+        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(9, 10));
       });
     });
     describe('Challenge', async () => {
-      let submissionId;
+      let proposalId;
       let rollUpId;
       it('should create a new optimistic roll up', async () => {
-        let submission = await mimcOPRU.submitOPRU(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.leaves, invalidRollUp.targetingRoot);
-        submissionId = submission.logs[0].args.id;
-        let rollUp = await mimcOPRU.newRollUp(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.initialSiblings);
+        let proposal = await mimcOPRU.propose(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.leaves, invalidRollUp.targetingRoot);
+        proposalId = proposal.logs[0].args.id;
+        let rollUp = await mimcOPRU.newOPRU(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.initialSiblings);
         rollUpId = rollUp.logs[0].args.id;
       });
       it('should be able to append all items with multiple transactions', async () => {
-        await mimcOPRU.append(rollUpId, invalidRollUp.leaves.slice(0, 3));
-        await mimcOPRU.append(rollUpId, invalidRollUp.leaves.slice(3, 6));
-        await mimcOPRU.append(rollUpId, invalidRollUp.leaves.slice(6, 9));
-        await mimcOPRU.append(rollUpId, invalidRollUp.leaves.slice(9, 10));
-      });
-      it('should return false for storage roll up', async () => {
-        let result = await mimcOPRU.verifyRollUp(
-          rollUpId,
-          invalidRollUp.startingRoot,
-          invalidRollUp.startingIndex,
-          invalidRollUp.targetingRoot,
-          invalidRollUp.leaves
-        );
-        result.should.equal(false);
+        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(0, 3));
+        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(3, 6));
+        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(6, 9));
+        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(9, 10));
       });
       it('should emit a Slashed event for the challenge', async () => {
-        let receipt = await mimcOPRU.challengeOPRU(submissionId, rollUpId);
-        receipt.logs[0].args.opruId.eq(submissionId).should.equal(true);
+        let receipt = await mimcOPRU.challenge(proposalId, rollUpId);
+        receipt.logs[0].args.opruId.eq(proposalId).should.equal(true);
       });
     });
   });

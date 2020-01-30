@@ -1,86 +1,142 @@
 pragma solidity >= 0.6.0;
-import { Tree } from "../library/Types.sol";
+import { Tree, OPRU, ExtendedOPRU } from "../library/Types.sol";
+import { OPRULib } from "../library/OPRULib.sol";
 import { MiMCTree } from "../trees/MiMCTree.sol";
-import { StorageRollUpBase } from "../library/StorageRollUpBase.sol";
 
-contract MiMCOPRU is StorageRollUpBase, MiMCTree {
+contract MiMCOPRU is MiMCTree {
+    using OPRULib for *;
+
+    uint constant public CHALLENGE_PERIOD = 15;
     Tree tree;
 
-    struct Submission {
-        uint startingRoot;
-        uint startingIndex;
-        uint targetingRoot;
-        uint targetingIndex;
-        bytes32 mergedLeaves;
-        address submitter;
+    struct Proposal {
+        OPRU opru;
+        address proposer;
         uint challengeDue;
         bool slashed;
     }
 
-    event NewSubmission(uint id);
-    event Slashed(uint opruId, address submitter, address challenger);
+    event NewProposal(uint id);
+    event NewChallenge(uint id);
+    event Slashed(uint opruId, address proposer, address challenger);
 
+    /** Proposals */
     uint index = 0;
-    mapping(uint=>Submission) public submissions;
-    mapping(address=>bool) public slashedSubmissionters;
+    Proposal[] proposals;
+    mapping(address=>bool) public slashedProposalters;
 
-    uint constant public challengePeriod = 15;
+    /** Challenges */
+    ExtendedOPRU[] rollUps;
+    mapping(uint=>mapping(address=>bool)) permitted;
+
+
     constructor() public {
         tree = newTree();
     }
 
-    function timestamp() public view returns (uint) {
-        return now;
-    }
-
-    function submitOPRU(
+    function propose(
         uint startingRoot,
         uint startingIndex,
         uint[] memory leaves,
         uint targetingRoot
-    ) public returns (uint opruId) {
-        opruId = index++;
-        require(!slashedSubmissionters[msg.sender], "Not allowed to submit");
-        submissions[opruId] = Submission(
-            startingRoot,
-            startingIndex,
-            targetingRoot,
-            startingIndex + leaves.length,
-            mergeLeaves(leaves),
+    ) public {
+        require(!slashedProposalters[msg.sender], "Not allowed to submit");
+        proposals.push() = Proposal(
+            OPRU(
+                Tree(startingRoot, startingIndex),
+                Tree(targetingRoot, startingIndex + leaves.length),
+                bytes32(0).mergeLeaves(leaves)
+            ),
             msg.sender,
-            now + challengePeriod,
+            now + CHALLENGE_PERIOD,
             false
         );
-        emit NewSubmission(opruId);
+        emit NewProposal(proposals.length - 1);
     }
 
-    function finalizeOPRU(uint id) public {
-        Submission storage submission = submissions[id];
-        require(!submission.slashed, "Submission is slashed");
-        require(submission.challengeDue <= now, "Still in the challenge period");
+    function finalize(uint id) public {
+        Proposal storage proposal = proposals[id];
+        require(!proposal.slashed, "Proposal is slashed");
+        require(proposal.challengeDue <= now, "Still in the challenge period");
         require(
-            submission.startingRoot == tree.root && submission.startingIndex == tree.index,
-            "Current tree is different with the submission's prev tree"
+            proposal.opru.start.root == tree.root &&
+            proposal.opru.start.index == tree.index,
+            "Current tree is different with the proposal's prev tree"
         );
-        tree.root = submission.targetingRoot;
-        tree.index = submission.targetingIndex;
+        tree.root = proposal.opru.result.root;
+        tree.index = proposal.opru.result.index;
     }
 
-    function challengeOPRU(uint submissionId, uint rollUpId) public {
-        Submission storage submission = submissions[submissionId];
-        require(!submission.slashed, "Already slashed");
-        require(submission.challengeDue > now, "Not in the challenge period");
-        bool verification = verifyRollUp(
-            rollUpId,
-            submission.startingRoot,
-            submission.startingIndex,
-            submission.targetingRoot,
-            submission.mergedLeaves
+    function newOPRU(
+        uint startingRoot,
+        uint startingIndex,
+        uint[] memory initialSiblings
+    ) public virtual {
+        ExtendedOPRU storage opru = rollUps.push();
+        hasher().initExtendedOPRU(opru, startingRoot, startingIndex, initialSiblings);
+        permitted[rollUps.length - 1][msg.sender] = true;
+        emit NewChallenge(rollUps.length - 1);
+    }
+
+    /**
+     * @dev Update the stored roll up by appending given leaves.
+     *      Only the creator is allowed to append new leaves.
+     */
+    function updateOPRU(
+        uint id,
+        uint[] memory leaves
+    ) public virtual {
+        ExtendedOPRU storage opru = rollUps[id];
+        require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
+        hasher().update(opru, leaves);
+    }
+
+    /**
+     * @dev The storage roll up creator can delete it to get refund gas cost.
+     */
+    function deleteOPRU(uint id) public {
+        require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
+        delete rollUps[id];
+        delete permitted[id][msg.sender];
+    }
+
+    function challenge(uint proposalId, uint rollUpId) public {
+        Proposal storage proposal = proposals[proposalId];
+        require(!proposal.slashed, "Already slashed");
+        require(proposal.challengeDue > now, "Not in the challenge period");
+        ExtendedOPRU storage extended = rollUps[rollUpId];
+        bool verification = extended.opru.verify(
+            proposal.opru.start.root,
+            proposal.opru.start.index,
+            proposal.opru.result.root,
+            proposal.opru.mergedLeaves
         );
         if(!verification) {
             // Implement slash logic here
-            submission.slashed = true;
-            emit Slashed(submissionId, submission.submitter, msg.sender);
+            proposal.slashed = true;
+            emit Slashed(proposalId, proposal.proposer, msg.sender);
         }
+        deleteOPRU(rollUpId);
+    }
+
+    function getProposal(uint id) public view returns (
+        uint startingRoot,
+        uint startingIndex,
+        uint resultRoot,
+        uint resultIndex,
+        address proposer,
+        uint challengeDue,
+        bool slashed
+    ) {
+        Proposal memory proposal = proposals[id];
+        return (
+            proposal.opru.start.root,
+            proposal.opru.start.index,
+            proposal.opru.result.root,
+            proposal.opru.result.index,
+            proposal.proposer,
+            proposal.challengeDue,
+            proposal.slashed
+        );
     }
 }

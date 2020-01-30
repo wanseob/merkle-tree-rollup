@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 import { Hasher, Tree } from "./Types.sol";
-import { RollUpLib } from "./StorageRollUpLib.sol";
+import { RollUpLib } from "./RollUpLib.sol";
 
 /**
  * @title Base contract of roll up implementation

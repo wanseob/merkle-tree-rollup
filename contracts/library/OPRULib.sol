@@ -1,58 +1,74 @@
 pragma solidity >= 0.6.0;
 
-import { Hasher, StorageRollUp } from "./Types.sol";
+import { Hasher, OPRU, ExtendedOPRU } from "./Types.sol";
 import { RollUpLib } from "./RollUpLib.sol";
 
-library StorageRollUpLib {
+library OPRULib {
     using RollUpLib for Hasher;
 
+    function newOPRU(
+        uint startingRoot,
+        uint index
+    ) internal pure returns (OPRU memory opru) {
+        opru.start.root = startingRoot;
+        opru.result.root = startingRoot;
+        opru.start.index = index;
+        opru.result.index = index;
+        opru.mergedLeaves = bytes32(0);
+        return opru;
+    }
+    
     /**
-     * @dev When the hash function is very expensive, a roll up can be accomplished through
-     * multiple transactions. If the hash function is more expensive than 5,000 gas it is
-     * effective to use storage than veritying the initial siblings everytime.
+     * @dev If the hash function is more expensive than 5,000 gas it is effective 
+     *      to use storage than veritying the initial siblings everytime.
      */
-    function initStorageRollUp(
+    function initExtendedOPRU(
         Hasher memory self,
-        StorageRollUp storage sRollUp,
+        ExtendedOPRU storage extended,
         uint startingRoot,
         uint index,
         uint[] memory initialSiblings
     ) internal {
-        require(!sRollUp.initialized, "Already initialized");
         require(self._startingLeafProof(startingRoot, index, initialSiblings), "Invalid merkle proof of the starting leaf node");
-        sRollUp.start.root = startingRoot;
-        sRollUp.result.root = startingRoot;
-        sRollUp.start.index = index;
-        sRollUp.result.index = index;
-        sRollUp.mergedLeaves = bytes32(0);
-        for(uint i = 0; i < initialSiblings.length; i++) {
-            sRollUp.siblings.push(initialSiblings[i]);
-        }
-        sRollUp.initialized = true;
+        extended.opru = newOPRU(startingRoot, index);
+        extended.siblings = initialSiblings;
     }
 
     /**
-     * @dev Append given leaves to the storage roll up and store it.
+     * @dev Append given leaves to the opru and store it.
      */
-    function appendToStorageRollUp(
+    function update(
         Hasher memory self,
-        StorageRollUp storage sRollUp,
+        OPRU storage opru,
+        uint[] memory initialSiblings,
         uint[] memory leaves
     ) internal {
-        require(sRollUp.initialized, "Not initialized");
-        uint nextIndex = sRollUp.result.index;
-        uint[] memory nextSiblings = sRollUp.siblings;
+        opru.result.root = self.rollUp(opru.result.root, opru.result.index, initialSiblings, leaves);
+        opru.result.index += leaves.length;
+        opru.mergedLeaves = mergeLeaves(opru.mergedLeaves, leaves);
+    }
+
+    /**
+     * @dev Append given leaves to the extended opru and store it.
+     */
+    function update(
+        Hasher memory self,
+        ExtendedOPRU storage extended,
+        uint[] memory leaves
+    ) internal {
+        uint nextIndex = extended.opru.result.index;
+        uint[] memory nextSiblings = extended.siblings;
         uint newRoot;
         for(uint i = 0; i < leaves.length; i++) {
             (newRoot, nextIndex, nextSiblings) = self._append(nextIndex, leaves[i], nextSiblings);
         }
-        bytes32 mergedLeaves = mergeLeaves(sRollUp.mergedLeaves, leaves);
+        bytes32 mergedLeaves = mergeLeaves(extended.opru.mergedLeaves, leaves);
+        extended.opru.result.root = newRoot;
+        extended.opru.result.index = nextIndex;
+        extended.opru.mergedLeaves = mergedLeaves;
         for(uint i = 0; i < nextSiblings.length; i++) {
-            sRollUp.siblings[i] = nextSiblings[i];
+            extended.siblings[i] = nextSiblings[i];
         }
-        sRollUp.mergedLeaves = mergedLeaves;
-        sRollUp.result.root = newRoot;
-        sRollUp.result.index = nextIndex;
     }
 
     /**
@@ -60,13 +76,12 @@ library StorageRollUpLib {
      *      its storage roll up result
      */
     function verify(
-        StorageRollUp memory self,
+        OPRU memory self,
         uint startingRoot,
         uint startingIndex,
         uint targetingRoot,
         bytes32 mergedLeaves
     ) internal pure returns (bool) {
-        require(self.initialized, "Not an initialized storage roll up");
         require(self.start.root == startingRoot, "Starting root is different");
         require(self.start.index == startingIndex, "Starting index is different");
         require(self.mergedLeaves == mergedLeaves, "Appended leaves are different");
