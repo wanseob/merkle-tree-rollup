@@ -19,7 +19,7 @@ library OPRULib {
     }
     
     /**
-     * @dev If the hash function is more expensive than 5,000 gas it is effective 
+     * @dev If the hash function is more expensive than 5,000 gas it is effective
      *      to use storage than veritying the initial siblings everytime.
      */
     function initExtendedOPRU(
@@ -94,6 +94,14 @@ library OPRULib {
      *      appended leaves through multiple transactions.
      */
     function mergeLeaves(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
+        bytes32 merged = base;
+        for(uint i = 0; i < leaves.length; i ++) {
+            merged = keccak256(abi.encodePacked(merged, leaves[i]));
+        }
+        return merged;
+    }
+
+    function mergeLeaves(bytes32 base, bytes32[] memory leaves) internal pure returns (bytes32) {
         bytes32 merged = base;
         for(uint i = 0; i < leaves.length; i ++) {
             merged = keccak256(abi.encodePacked(merged, leaves[i]));
