@@ -1,6 +1,6 @@
 {
   "name": "merkle-tree-rollup",
-  "version": "0.6.5",
+  "version": "1.0.0",
   "description": "Merkle Tree roll up library",
   "scripts": {
     "test": "./node_modules/.bin/truffle test",
