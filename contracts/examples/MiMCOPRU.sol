@@ -1,10 +1,12 @@
 pragma solidity >= 0.6.0;
-import { Tree, OPRU, ExtendedOPRU } from "../library/Types.sol";
-import { OPRULib } from "../library/OPRULib.sol";
+import { Tree, OPRU, SplitRollUp } from "../library/Types.sol";
+import { SplitRollUpLib } from "../library/SplitRollUpLib.sol";
+import { RollUpLib } from "../library/RollUpLib.sol";
 import { MiMCTree } from "../trees/MiMCTree.sol";
 
 contract MiMCOPRU is MiMCTree {
-    using OPRULib for *;
+    using SplitRollUpLib for *;
+    using RollUpLib for bytes32;
 
     uint constant public CHALLENGE_PERIOD = 15;
     Tree tree;
@@ -18,7 +20,7 @@ contract MiMCOPRU is MiMCTree {
 
     event NewProposal(uint id);
     event NewChallenge(uint id);
-    event Slashed(uint opruId, address proposer, address challenger);
+    event Slashed(uint proposalId, address proposer, address challenger);
 
     /** Proposals */
     uint index = 0;
@@ -26,7 +28,7 @@ contract MiMCOPRU is MiMCTree {
     mapping(address=>bool) public slashedProposalters;
 
     /** Challenges */
-    ExtendedOPRU[] rollUps;
+    SplitRollUp[] rollUps;
     mapping(uint=>mapping(address=>bool)) permitted;
 
 
@@ -45,7 +47,7 @@ contract MiMCOPRU is MiMCTree {
             OPRU(
                 Tree(startingRoot, startingIndex),
                 Tree(targetingRoot, startingIndex + leaves.length),
-                bytes32(0).mergeLeaves(leaves)
+                bytes32(0).merge(leaves)
             ),
             msg.sender,
             now + CHALLENGE_PERIOD,
@@ -67,13 +69,13 @@ contract MiMCOPRU is MiMCTree {
         tree.index = proposal.opru.result.index;
     }
 
-    function newOPRU(
+    function newSplitRollUp(
         uint startingRoot,
         uint startingIndex,
         uint[] memory initialSiblings
     ) public virtual {
-        ExtendedOPRU storage opru = rollUps.push();
-        hasher().initExtendedOPRU(opru, startingRoot, startingIndex, initialSiblings);
+        SplitRollUp storage rollUp = rollUps.push();
+        hasher().initAndSaveSiblings(rollUp, startingRoot, startingIndex, initialSiblings);
         permitted[rollUps.length - 1][msg.sender] = true;
         emit NewChallenge(rollUps.length - 1);
     }
@@ -82,19 +84,19 @@ contract MiMCOPRU is MiMCTree {
      * @dev Update the stored roll up by appending given leaves.
      *      Only the creator is allowed to append new leaves.
      */
-    function updateOPRU(
+    function updateSplitRollUp(
         uint id,
         uint[] memory leaves
     ) public virtual {
-        ExtendedOPRU storage opru = rollUps[id];
+        SplitRollUp storage rollUp = rollUps[id];
         require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
-        hasher().update(opru, leaves);
+        hasher().update(rollUp, leaves);
     }
 
     /**
      * @dev The storage roll up creator can delete it to get refund gas cost.
      */
-    function deleteOPRU(uint id) public {
+    function deleteSplitRollUp(uint id) public {
         require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
         delete rollUps[id];
         delete permitted[id][msg.sender];
@@ -104,19 +106,14 @@ contract MiMCOPRU is MiMCTree {
         Proposal storage proposal = proposals[proposalId];
         require(!proposal.slashed, "Already slashed");
         require(proposal.challengeDue > now, "Not in the challenge period");
-        ExtendedOPRU storage extended = rollUps[rollUpId];
-        bool verification = extended.opru.verify(
-            proposal.opru.start.root,
-            proposal.opru.start.index,
-            proposal.opru.result.root,
-            proposal.opru.mergedLeaves
-        );
+        SplitRollUp storage rollUp = rollUps[rollUpId];
+        bool verification = rollUp.verify(proposal.opru);
         if(!verification) {
             // Implement slash logic here
             proposal.slashed = true;
             emit Slashed(proposalId, proposal.proposer, msg.sender);
         }
-        deleteOPRU(rollUpId);
+        deleteSplitRollUp(rollUpId);
     }
 
     function getProposal(uint id) public view returns (

@@ -65,15 +65,15 @@ contract.only('MiMC OPRU Test', async accounts => {
     describe('How challenge roll up works', async () => {
       let rollUpId;
       it('should emit an event when it starts a new storage based roll up', async () => {
-        let rollUp = await mimcOPRU.newOPRU(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.initialSiblings);
+        let rollUp = await mimcOPRU.newSplitRollUp(validRollUp.startingRoot, validRollUp.startingIndex, validRollUp.initialSiblings);
         rollUpId = rollUp.logs[0].args.id;
         rollUpId.should.be.a.bignumber.that.is.zero;
       });
       it('should be able to append all items with multiple transactions', async () => {
-        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(0, 3));
-        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(3, 6));
-        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(6, 9));
-        await mimcOPRU.updateOPRU(rollUpId, validRollUp.leaves.slice(9, 10));
+        await mimcOPRU.updateSplitRollUp(rollUpId, validRollUp.leaves.slice(0, 3));
+        await mimcOPRU.updateSplitRollUp(rollUpId, validRollUp.leaves.slice(3, 6));
+        await mimcOPRU.updateSplitRollUp(rollUpId, validRollUp.leaves.slice(6, 9));
+        await mimcOPRU.updateSplitRollUp(rollUpId, validRollUp.leaves.slice(9, 10));
       });
     });
     describe('Challenge', async () => {
@@ -82,18 +82,18 @@ contract.only('MiMC OPRU Test', async accounts => {
       it('should create a new optimistic roll up', async () => {
         let proposal = await mimcOPRU.propose(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.leaves, invalidRollUp.targetingRoot);
         proposalId = proposal.logs[0].args.id;
-        let rollUp = await mimcOPRU.newOPRU(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.initialSiblings);
+        let rollUp = await mimcOPRU.newSplitRollUp(invalidRollUp.startingRoot, invalidRollUp.startingIndex, invalidRollUp.initialSiblings);
         rollUpId = rollUp.logs[0].args.id;
       });
       it('should be able to append all items with multiple transactions', async () => {
-        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(0, 3));
-        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(3, 6));
-        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(6, 9));
-        await mimcOPRU.updateOPRU(rollUpId, invalidRollUp.leaves.slice(9, 10));
+        await mimcOPRU.updateSplitRollUp(rollUpId, invalidRollUp.leaves.slice(0, 3));
+        await mimcOPRU.updateSplitRollUp(rollUpId, invalidRollUp.leaves.slice(3, 6));
+        await mimcOPRU.updateSplitRollUp(rollUpId, invalidRollUp.leaves.slice(6, 9));
+        await mimcOPRU.updateSplitRollUp(rollUpId, invalidRollUp.leaves.slice(9, 10));
       });
       it('should emit a Slashed event for the challenge', async () => {
         let receipt = await mimcOPRU.challenge(proposalId, rollUpId);
-        receipt.logs[0].args.opruId.eq(proposalId).should.equal(true);
+        receipt.logs[0].args.proposalId.eq(proposalId).should.equal(true);
       });
     });
   });

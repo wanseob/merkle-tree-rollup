@@ -1,12 +1,26 @@
 pragma solidity >= 0.6.0;
 
-import { Hasher, Tree } from "./Types.sol";
+import { Hasher, Tree, OPRU } from "./Types.sol";
 
 /**
  * @author Wilson Beam <wilsonbeam@protonmail.com>
  * @title Append-only usage merkle tree roll up library
  */
 library RollUpLib {
+    function newOPRU(
+        uint startingRoot,
+        uint startingIndex,
+        uint resultRoot,
+        uint resultIndex,
+        uint[] memory leaves
+    ) internal pure returns (OPRU memory opru) {
+        opru.start.root = startingRoot;
+        opru.start.index = startingIndex;
+        opru.result.root = resultRoot;
+        opru.result.index = resultIndex;
+        opru.mergedLeaves = merge(bytes32(0), leaves);
+    }
+
     function rollUp(
         Hasher memory self,
         uint startingRoot,
@@ -59,6 +73,27 @@ library RollUpLib {
     function newTree(Hasher memory hasher) internal pure returns (Tree memory tree) {
         tree.root = hasher.preHashedZero[hasher.preHashedZero.length - 1];
         tree.index = 0;
+    }
+
+    /**
+     * @dev Appended leaves will be merged into a single bytes32 value sequentially
+     *      and that will be used to validate the correct sequence of the total
+     *      appended leaves through multiple transactions.
+     */
+    function merge(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
+        bytes32 merged = base;
+        for(uint i = 0; i < leaves.length; i ++) {
+            merged = keccak256(abi.encodePacked(merged, leaves[i]));
+        }
+        return merged;
+    }
+
+    function merge(bytes32 base, bytes32[] memory leaves) internal pure returns (bytes32) {
+        bytes32 merged = base;
+        for(uint i = 0; i < leaves.length; i ++) {
+            merged = keccak256(abi.encodePacked(merged, leaves[i]));
+        }
+        return merged;
     }
 
     function _startingLeafProof(
