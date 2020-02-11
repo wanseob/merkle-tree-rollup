@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 import { RollUpLib } from "./RollUpLib.sol";
-import { Hasher, Tree } from "./Types.sol";
+import { Hasher, Tree, SplitRollUp } from "./Types.sol";
 
 /**
  * @author Wilson Beam <wilsonbeam@protonmail.com>
@@ -9,18 +9,20 @@ import { Hasher, Tree } from "./Types.sol";
  */
 library SubTreeRollUpLib {
     using RollUpLib for Hasher;
+    using RollUpLib for bytes32;
 
     function rollUpSubTree(
         Hasher memory self,
         uint startingRoot,
         uint index,
         uint subTreeDepth,
-        uint[][] memory subTrees,
+        uint[] memory leaves,
         uint[] memory subTreeSiblings
     ) internal pure returns (uint newRoot) {
         require(index % (1 << subTreeDepth) == 0, "Can't merge the subTree");
         require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Invalid merkle proof of starting leaf node");
         uint nextIndex = index;
+        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint[] memory nextSiblings = subTreeSiblings;
         for(uint i = 0; i < subTrees.length; i++) {
             (newRoot, nextIndex, nextSiblings) = _appendSubTree(
@@ -33,6 +35,62 @@ library SubTreeRollUpLib {
         }
     }
 
+    /**
+     * @dev If you start the split roll up using this function, you don't need to submit and verify
+     *      the every time. Approximately, if the hash function is more expensive than 5,000 gas,
+     *      it becomes to cheaper to record the intermediate siblings on-chain.
+     *      To be specific, record intermediate siblings when v > 5000 + 20000/(n-1)
+     *      v: gas cost of the hash function, n: how many times to call 'update'
+     */
+    function initSubTreeRollUp(
+        Hasher memory self,
+        SplitRollUp storage splitRollUp,
+        uint startingRoot,
+        uint index,
+        uint subTreeDepth,
+        uint[] memory subTreeSiblings
+    ) internal {
+        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Invalid merkle proof of starting leaf node");
+        splitRollUp.start.root = startingRoot;
+        splitRollUp.result.root = startingRoot;
+        splitRollUp.start.index = index;
+        splitRollUp.result.index = index;
+        splitRollUp.mergedLeaves = bytes32(0);
+        splitRollUp.siblings = subTreeSiblings;
+    }
+
+    /**
+     * @dev Append the given leaves using the on-chain sibling data.
+     *      You can use this function when only you started the SplitRollUp using
+     *      initAndSaveSiblings()
+     * @param splitRollUp The SplitRollUp to update
+     * @param leaves Items to append to the tree.
+     */
+    function update(
+        Hasher memory self,
+        SplitRollUp storage splitRollUp,
+        uint subTreeDepth,
+        uint[] memory leaves
+    ) internal {
+        uint nextIndex = splitRollUp.result.index;
+        uint[] memory nextSiblings = splitRollUp.siblings;
+        uint newRoot;
+        (newRoot, nextIndex, nextSiblings) = _appendSubTree(
+            self,
+            nextIndex,
+            subTreeDepth,
+            leaves,
+            nextSiblings
+        );
+        bytes32 mergedLeaves = splitRollUp.mergedLeaves.merge(leaves);
+        splitRollUp.result.root = newRoot;
+        splitRollUp.result.index = nextIndex;
+        splitRollUp.mergedLeaves = mergedLeaves;
+        for(uint i = 0; i < nextSiblings.length; i++) {
+            splitRollUp.siblings[i] = nextSiblings[i];
+        }
+    }
+
     function splitToSubTrees(
         uint[] memory leaves,
         uint subTreeDepth
@@ -40,11 +98,14 @@ library SubTreeRollUpLib {
         uint subTreeSize = 1 << subTreeDepth;
         uint numOfSubTrees = (leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1);
         subTrees = new uint[][](numOfSubTrees);
+        for (uint i = 0; i < numOfSubTrees; i++) {
+            subTrees[i] = new uint[](subTreeSize);
+        }
         uint index = 0;
         uint subTreeIndex = 0;
         for(uint i = 0; i < leaves.length; i++) {
             subTrees[subTreeIndex][index] = leaves[i];
-            if(subTreeIndex < subTreeSize - 1) {
+            if(index < subTreeSize - 1) {
                 index += 1;
             } else {
                 index = 0;

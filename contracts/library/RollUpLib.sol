@@ -65,13 +65,27 @@ library RollUpLib {
         uint startingRoot,
         uint startingIndex,
         uint resultRoot,
-        uint resultIndex,
         uint[] memory leaves
     ) internal pure returns (OPRU memory opru) {
         opru.start.root = startingRoot;
         opru.start.index = startingIndex;
         opru.result.root = resultRoot;
-        opru.result.index = resultIndex;
+        opru.result.index = startingIndex + leaves.length;
+        opru.mergedLeaves = merge(bytes32(0), leaves);
+    }
+
+    function newSubTreeOPRU(
+        uint startingRoot,
+        uint startingIndex,
+        uint resultRoot,
+        uint subTreeDepth,
+        uint[] memory leaves
+    ) internal pure returns (OPRU memory opru) {
+        uint subTreeSize = 1 << subTreeDepth;
+        opru.start.root = startingRoot;
+        opru.start.index = startingIndex;
+        opru.result.root = resultRoot;
+        opru.result.index = startingIndex + subTreeSize*((leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1));
         opru.mergedLeaves = merge(bytes32(0), leaves);
     }
 
