@@ -1,12 +1,10 @@
 pragma solidity >= 0.6.0;
 import { Tree, OPRU, SplitRollUp } from "../library/Types.sol";
-import { SplitRollUpLib } from "../library/SplitRollUpLib.sol";
 import { RollUpLib } from "../library/RollUpLib.sol";
 import { MiMCTree } from "../trees/MiMCTree.sol";
 
 contract MiMCOPRU is MiMCTree {
-    using SplitRollUpLib for *;
-    using RollUpLib for bytes32;
+    using RollUpLib for *;
 
     uint constant public CHALLENGE_PERIOD = 15;
     Tree tree;
