@@ -20,8 +20,11 @@ library SplitRollUpLib {
     }
 
     /**
-     * @dev If the hash function is more expensive than 5,000 gas it is effective
-     *      to use storage than veritying the initial siblings everytime.
+     * @dev If you start the split roll up using this function, you don't need to submit and verify
+     *      the every time. Approximately, if the hash function is more expensive than 5,000 gas,
+     *      it becomes to cheaper to record the intermediate siblings on-chain.
+     *      To be specific, record intermediate siblings when v > 5000 + 20000/(n-1)
+     *      v: gas cost of the hash function, n: how many times to call 'update'
      */
     function initAndSaveSiblings(
         Hasher memory self,
@@ -39,7 +42,10 @@ library SplitRollUpLib {
         rollUp.siblings = initialSiblings;
     }
     /**
-     * @dev Append given leaves to the SplitRollUp and store it.
+     * @dev Append given leaves to the SplitRollUp with verifying the siblings.
+     * @param rollUp The SplitRollUp to update
+     * @param initialSiblings Initial siblings to start roll up.
+     * @param leaves Items to append to the tree.
      */
     function update(
         Hasher memory self,
@@ -53,7 +59,11 @@ library SplitRollUpLib {
     }
 
     /**
-     * @dev This uses the on-chain siblings.
+     * @dev Append the given leaves using the on-chain sibling data.
+     *      You can use this function when only you started the SplitRollUp using
+     *      initAndSaveSiblings()
+     * @param rollUp The SplitRollUp to update
+     * @param leaves Items to append to the tree.
      */
     function update(
         Hasher memory self,
@@ -80,8 +90,8 @@ library SplitRollUpLib {
     }
 
     /**
-     * @dev Check the given parameters roll up assertion is true based on
-     *      its storage roll up result
+     * @dev Check that the given optimistic roll up is valid using the
+     *      on-chain calculated roll up.
      */
     function verify(
         SplitRollUp memory self,
