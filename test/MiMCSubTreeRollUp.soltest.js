@@ -24,7 +24,7 @@ contract('MiMC Subtree Roll Up Test', async accounts => {
     validRollUp.startingRoot = await merkleTree.root();
     validRollUp.initialSiblings = (await merkleTree.path(index)).path_elements.slice(SUB_TREE_DEPTH);
     validRollUp.startingIndex = index;
-    let items = [...Array(198).keys()];
+    let items = [...Array(253).keys()];
     validRollUp.leaves = items;
     for (let i = 0; i < items.length; i++) {
       await merkleTree.update(index + i, items[i]);
