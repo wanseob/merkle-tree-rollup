@@ -1,7 +1,7 @@
 pragma solidity >= 0.6.0;
 
 import { RollUpLib } from "./RollUpLib.sol";
-import { Hasher, Tree, SplitRollUp } from "./Types.sol";
+import { Hasher, Tree, SplitRollUp, OPRU } from "./Types.sol";
 
 /**
  * @author Wilson Beam <wilsonbeam@protonmail.com>
@@ -19,8 +19,8 @@ library SubTreeRollUpLib {
         uint[] memory leaves,
         uint[] memory subTreeSiblings
     ) internal pure returns (uint newRoot) {
-        require(index % (1 << subTreeDepth) == 0, "Can't merge the subTree");
-        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Invalid merkle proof of starting leaf node");
+        require(index % (1 << subTreeDepth) == 0, "Can't merge a subTree");
+        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Can't merge a sub tree");
         uint nextIndex = index;
         uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint[] memory nextSiblings = subTreeSiblings;
@@ -35,59 +35,127 @@ library SubTreeRollUpLib {
         }
     }
 
+    function newSubTreeOPRU(
+        uint startingRoot,
+        uint startingIndex,
+        uint resultRoot,
+        uint subTreeDepth,
+        uint[] memory leaves
+    ) internal pure returns (OPRU memory opru) {
+        uint subTreeSize = 1 << subTreeDepth;
+        opru.start.root = startingRoot;
+        opru.start.index = startingIndex;
+        opru.result.root = resultRoot;
+        opru.result.index = startingIndex + subTreeSize*((leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1));
+        opru.mergedLeaves = RollUpLib.merge(bytes32(0), leaves);
+    }
+    function init(
+        SplitRollUp storage self,
+        uint startingRoot,
+        uint index
+    ) internal {
+        self.start.root = startingRoot;
+        self.result.root = startingRoot;
+        self.start.index = index;
+        self.result.index = index;
+        self.mergedLeaves = bytes32(0);
+    }
+
     /**
-     * @dev If you start the split roll up using this function, you don't need to submit and verify
-     *      the every time. Approximately, if the hash function is more expensive than 5,000 gas,
-     *      it becomes to cheaper to record the intermediate siblings on-chain.
-     *      To be specific, record intermediate siblings when v > 5000 + 20000/(n-1)
-     *      v: gas cost of the hash function, n: how many times to call 'update'
+     * @dev It verifies the initial sibling only once and then store the data on chain.
+     *      This is usually appropriate for expensive hash functions like MiMC or Poseidon.
      */
-    function initSubTreeRollUp(
-        Hasher memory self,
-        SplitRollUp storage splitRollUp,
+    function initWithSiblings(
+        SplitRollUp storage self,
+        Hasher memory hasher,
         uint startingRoot,
         uint index,
         uint subTreeDepth,
         uint[] memory subTreeSiblings
     ) internal {
-        require(_emptySubTreeProof(self, startingRoot, index, subTreeDepth, subTreeSiblings), "Invalid merkle proof of starting leaf node");
-        splitRollUp.start.root = startingRoot;
-        splitRollUp.result.root = startingRoot;
-        splitRollUp.start.index = index;
-        splitRollUp.result.index = index;
-        splitRollUp.mergedLeaves = bytes32(0);
-        splitRollUp.siblings = subTreeSiblings;
+        require(_emptySubTreeProof(hasher, startingRoot, index, subTreeDepth, subTreeSiblings), "Can't merge a subTree");
+        self.start.root = startingRoot;
+        self.result.root = startingRoot;
+        self.start.index = index;
+        self.result.index = index;
+        self.mergedLeaves = bytes32(0);
+        self.siblings = subTreeSiblings;
     }
-
     /**
-     * @dev Append the given leaves using the on-chain sibling data.
-     *      You can use this function when only you started the SplitRollUp using
-     *      initAndSaveSiblings()
-     * @param splitRollUp The SplitRollUp to update
+     * @dev Construct a sub tree and insert into the merkle tree using the
+     *      calldata provided sibling data. This is usually appropriate for
+     *      keccak or other cheap hash functions.
+     * @param self The SplitRollUp to update
      * @param leaves Items to append to the tree.
      */
     function update(
-        Hasher memory self,
-        SplitRollUp storage splitRollUp,
+        SplitRollUp storage self,
+        Hasher memory hasher,
+        uint subTreeDepth,
+        uint[] memory subTreeSiblings,
+        uint[] memory leaves
+    ) internal {
+        require(
+            _emptySubTreeProof(
+                hasher,
+                self.result.root,
+                self.result.index,
+                subTreeDepth,
+                subTreeSiblings
+            ),
+            "Can't merge a subTree"
+        );
+        uint[] memory nextSiblings = subTreeSiblings;
+        uint nextIndex = self.result.index;
+        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        uint newRoot;
+        for(uint i = 0; i < subTrees.length; i++) {
+            (newRoot, nextIndex, nextSiblings) = _appendSubTree(
+                hasher,
+                nextIndex,
+                subTreeDepth,
+                subTrees[i],
+                nextSiblings
+            );
+        }
+        bytes32 mergedLeaves = self.mergedLeaves.merge(leaves);
+        self.result.root = newRoot;
+        self.result.index = nextIndex;
+        self.mergedLeaves = mergedLeaves;
+    }
+
+    /**
+     * @dev Construct a sub tree and insert into the merkle tree using the on-chain sibling data.
+     *      You can use this function when only you started the SplitRollUp using
+     *      initSubTreeRollUpWithSiblings()
+     * @param self The SplitRollUp to update
+     * @param leaves Items to append to the tree.
+     */
+    function update(
+        SplitRollUp storage self,
+        Hasher memory hasher,
         uint subTreeDepth,
         uint[] memory leaves
     ) internal {
-        uint nextIndex = splitRollUp.result.index;
-        uint[] memory nextSiblings = splitRollUp.siblings;
+        uint nextIndex = self.result.index;
+        uint[] memory nextSiblings = self.siblings;
+        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
         uint newRoot;
-        (newRoot, nextIndex, nextSiblings) = _appendSubTree(
-            self,
-            nextIndex,
-            subTreeDepth,
-            leaves,
-            nextSiblings
-        );
-        bytes32 mergedLeaves = splitRollUp.mergedLeaves.merge(leaves);
-        splitRollUp.result.root = newRoot;
-        splitRollUp.result.index = nextIndex;
-        splitRollUp.mergedLeaves = mergedLeaves;
+        for(uint i = 0; i < subTrees.length; i++) {
+            (newRoot, nextIndex, nextSiblings) = _appendSubTree(
+                hasher,
+                nextIndex,
+                subTreeDepth,
+                subTrees[i],
+                nextSiblings
+            );
+        }
+        bytes32 mergedLeaves = self.mergedLeaves.merge(leaves);
+        self.result.root = newRoot;
+        self.result.index = nextIndex;
+        self.mergedLeaves = mergedLeaves;
         for(uint i = 0; i < nextSiblings.length; i++) {
-            splitRollUp.siblings[i] = nextSiblings[i];
+            self.siblings[i] = nextSiblings[i];
         }
     }
 
@@ -112,6 +180,13 @@ library SubTreeRollUpLib {
                 subTreeIndex += 1;
             }
         }
+    }
+
+    function verify(
+        SplitRollUp memory self,
+        OPRU memory opru
+    ) internal pure returns (bool) {
+        return RollUpLib.verify(self, opru);
     }
 
     /**

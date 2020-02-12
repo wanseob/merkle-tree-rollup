@@ -53,7 +53,7 @@ contract('Keccak roll up test', async accounts => {
 
   it('push should return the correct merkle root after appending some items', async () => {
     let merkleProof = await merkleTree.path(0);
-    let items = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let items = [...Array(128).keys()];
     let prevRoot = await merkleTree.root();
     for (let i = 0; i < items.length; i++) {
       await merkleTree.update(i, items[i]);

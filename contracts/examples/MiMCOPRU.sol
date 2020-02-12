@@ -73,7 +73,7 @@ contract MiMCOPRU is MiMCTree {
         uint[] memory initialSiblings
     ) public virtual {
         SplitRollUp storage rollUp = rollUps.push();
-        hasher().initAndSaveSiblings(rollUp, startingRoot, startingIndex, initialSiblings);
+        rollUp.initWithSiblings(hasher(), startingRoot, startingIndex, initialSiblings);
         permitted[rollUps.length - 1][msg.sender] = true;
         emit NewChallenge(rollUps.length - 1);
     }
@@ -88,7 +88,7 @@ contract MiMCOPRU is MiMCTree {
     ) public virtual {
         SplitRollUp storage rollUp = rollUps[id];
         require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
-        hasher().update(rollUp, leaves);
+        rollUp.update(hasher(), leaves);
     }
 
     /**

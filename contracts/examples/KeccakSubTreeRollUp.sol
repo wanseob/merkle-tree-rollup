@@ -1,14 +1,13 @@
 pragma solidity >= 0.6.0;
 import { Tree, OPRU, SplitRollUp } from "../library/Types.sol";
-import { RollUpLib } from "../library/RollUpLib.sol";
 import { SubTreeRollUpLib } from "../library/SubTreeRollUpLib.sol";
-import { MiMCTree } from "../trees/MiMCTree.sol";
+import { KeccakTree } from "../trees/KeccakTree.sol";
 
-contract MiMCSubTreeRollUp is MiMCTree {
+contract KeccakSubTreeRollUp is KeccakTree {
     using SubTreeRollUpLib for *;
 
     uint constant public CHALLENGE_PERIOD = 30;
-    uint constant public SUBTREE_DEPTH = 6;
+    uint constant public SUBTREE_DEPTH = 10;
     uint constant public SUBTREE_SIZE = 1 << SUBTREE_DEPTH;
     Tree tree;
 
@@ -74,17 +73,10 @@ contract MiMCSubTreeRollUp is MiMCTree {
 
     function newSplitRollUp(
         uint startingRoot,
-        uint startingIndex,
-        uint[] memory initialSiblings
+        uint startingIndex
     ) public virtual {
         SplitRollUp storage rollUp = rollUps.push();
-        rollUp.initWithSiblings(
-            hasher(),
-            startingRoot,
-            startingIndex,
-            SUBTREE_DEPTH,
-            initialSiblings
-        );
+        rollUp.init(startingRoot, startingIndex);
         permitted[rollUps.length - 1][msg.sender] = true;
         emit NewChallenge(rollUps.length - 1);
     }
@@ -95,11 +87,12 @@ contract MiMCSubTreeRollUp is MiMCTree {
      */
     function updateSplitRollUp(
         uint id,
-        uint[] memory leaves
+        uint[] memory leaves,
+        uint[] memory siblings
     ) public virtual {
         SplitRollUp storage rollUp = rollUps[id];
         require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
-        rollUp.update(hasher(), SUBTREE_DEPTH, leaves);
+        rollUp.update(hasher(), SUBTREE_DEPTH, siblings, leaves);
     }
 
     /**
