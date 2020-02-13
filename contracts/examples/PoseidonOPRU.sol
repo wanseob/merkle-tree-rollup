@@ -1,12 +1,12 @@
 pragma solidity >= 0.6.0;
 import { Tree, OPRU, SplitRollUp } from "../library/Types.sol";
 import { RollUpLib } from "../library/RollUpLib.sol";
-import { MiMCTree } from "../trees/MiMCTree.sol";
+import { PoseidonTree } from "../trees/PoseidonTree.sol";
 
-contract MiMCOPRU is MiMCTree {
+contract PoseidonOPRU is PoseidonTree {
     using RollUpLib for *;
 
-    uint constant public CHALLENGE_PERIOD = 30;
+    uint constant public CHALLENGE_PERIOD = 45;
     Tree tree;
 
     struct Proposal {

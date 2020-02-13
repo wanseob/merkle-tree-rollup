@@ -238,15 +238,15 @@ library RollUpLib {
         nextSiblings = new uint[](siblings.length);
         uint path = index;
         uint node = leaf;
-        for(uint i = 0; i < siblings.length; i++) {
+        for(uint level = 0; level < siblings.length; level++) {
             if(path & 1 == 0) {
                 // right empty sibling
-                nextSiblings[i] = node; // current node will be the next merkle proof's left sibling
-                node = self.parentOf(node, self.preHashedZero[i]);
+                nextSiblings[level] = node; // current node will be the next merkle proof's left sibling
+                node = self.parentOf(node, self.preHashedZero[level]);
             } else {
                 // left sibling
-                nextSiblings[i] = siblings[i]; // keep current sibling
-                node = self.parentOf(siblings[i], node);
+                nextSiblings[level] = siblings[level]; // keep current sibling
+                node = self.parentOf(siblings[level], node);
             }
             path >>= 1;
         }

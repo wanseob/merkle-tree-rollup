@@ -99,7 +99,7 @@ module.exports = {
       // }
     },
     external: {
-      command: 'node scripts/mimcGenerator.js',
+      command: 'node scripts/mimcGenerator.js && node scripts/poseidonGenerator.js',
       targets: [
         {
           path: 'build/generated/*.json'

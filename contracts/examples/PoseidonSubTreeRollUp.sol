@@ -1,12 +1,15 @@
 pragma solidity >= 0.6.0;
 import { Tree, OPRU, SplitRollUp } from "../library/Types.sol";
 import { RollUpLib } from "../library/RollUpLib.sol";
-import { MiMCTree } from "../trees/MiMCTree.sol";
+import { SubTreeRollUpLib } from "../library/SubTreeRollUpLib.sol";
+import { PoseidonTree } from "../trees/PoseidonTree.sol";
 
-contract MiMCOPRU is MiMCTree {
-    using RollUpLib for *;
+contract PoseidonSubTreeRollUp is PoseidonTree {
+    using SubTreeRollUpLib for *;
 
-    uint constant public CHALLENGE_PERIOD = 30;
+    uint constant public CHALLENGE_PERIOD = 60;
+    uint constant public SUBTREE_DEPTH = 5;
+    uint constant public SUBTREE_SIZE = 1 << SUBTREE_DEPTH;
     Tree tree;
 
     struct Proposal {
@@ -42,10 +45,12 @@ contract MiMCOPRU is MiMCTree {
     ) public {
         require(!slashedProposalters[msg.sender], "Not allowed to submit");
         proposals.push() = Proposal(
-            OPRU(
-                Tree(startingRoot, startingIndex),
-                Tree(targetingRoot, startingIndex + leaves.length),
-                bytes32(0).merge(leaves)
+            SubTreeRollUpLib.newSubTreeOPRU(
+                startingRoot,
+                startingIndex,
+                targetingRoot,
+                SUBTREE_DEPTH,
+                leaves
             ),
             msg.sender,
             now + CHALLENGE_PERIOD,
@@ -73,7 +78,13 @@ contract MiMCOPRU is MiMCTree {
         uint[] memory initialSiblings
     ) public virtual {
         SplitRollUp storage rollUp = rollUps.push();
-        rollUp.initWithSiblings(hasher(), startingRoot, startingIndex, initialSiblings);
+        rollUp.initWithSiblings(
+            hasher(),
+            startingRoot,
+            startingIndex,
+            SUBTREE_DEPTH,
+            initialSiblings
+        );
         permitted[rollUps.length - 1][msg.sender] = true;
         emit NewChallenge(rollUps.length - 1);
     }
@@ -88,7 +99,7 @@ contract MiMCOPRU is MiMCTree {
     ) public virtual {
         SplitRollUp storage rollUp = rollUps[id];
         require(permitted[id][msg.sender], "Not permitted to update the given storage roll up");
-        rollUp.update(hasher(), leaves);
+        rollUp.update(hasher(), SUBTREE_DEPTH, leaves);
     }
 
     /**
