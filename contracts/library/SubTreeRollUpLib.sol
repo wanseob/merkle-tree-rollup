@@ -49,6 +49,7 @@ library SubTreeRollUpLib {
         opru.result.index = startingIndex + subTreeSize*((leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1));
         opru.mergedLeaves = RollUpLib.merge(bytes32(0), leaves);
     }
+
     function init(
         SplitRollUp storage self,
         uint startingRoot,
@@ -187,6 +188,14 @@ library SubTreeRollUpLib {
         OPRU memory opru
     ) internal pure returns (bool) {
         return RollUpLib.verify(self, opru);
+    }
+
+    function merge(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
+        return RollUpLib.merge(base, leaves);
+    }
+
+    function merge(bytes32 base, bytes32[] memory leaves) internal pure returns (bytes32) {
+        return RollUpLib.merge(base, leaves);
     }
 
     /**
