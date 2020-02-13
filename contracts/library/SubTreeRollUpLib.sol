@@ -47,7 +47,8 @@ library SubTreeRollUpLib {
         opru.start.index = startingIndex;
         opru.result.root = resultRoot;
         opru.result.index = startingIndex + subTreeSize*((leaves.length / subTreeSize) + (leaves.length % subTreeSize == 0 ? 0 : 1));
-        opru.mergedLeaves = RollUpLib.merge(bytes32(0), leaves);
+        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        opru.mergedLeaves = merge(bytes32(0), subTrees);
     }
 
     function init(
@@ -119,10 +120,9 @@ library SubTreeRollUpLib {
                 nextSiblings
             );
         }
-        bytes32 mergedLeaves = self.mergedLeaves.merge(leaves);
         self.result.root = newRoot;
         self.result.index = nextIndex;
-        self.mergedLeaves = mergedLeaves;
+        self.mergedLeaves = merge(self.mergedLeaves, subTrees);
     }
 
     /**
@@ -151,10 +151,9 @@ library SubTreeRollUpLib {
                 nextSiblings
             );
         }
-        bytes32 mergedLeaves = self.mergedLeaves.merge(leaves);
         self.result.root = newRoot;
         self.result.index = nextIndex;
-        self.mergedLeaves = mergedLeaves;
+        self.mergedLeaves = merge(self.mergedLeaves, subTrees);
         for(uint i = 0; i < nextSiblings.length; i++) {
             self.siblings[i] = nextSiblings[i];
         }
@@ -190,12 +189,36 @@ library SubTreeRollUpLib {
         return RollUpLib.verify(self, opru);
     }
 
-    function merge(bytes32 base, uint[] memory leaves) internal pure returns (bytes32) {
-        return RollUpLib.merge(base, leaves);
+    function merge(bytes32 base, uint subTreeDepth, bytes32[] memory leaves) internal pure returns (bytes32) {
+        uint[] memory uintLeaves;
+        assembly {
+            uintLeaves := leaves
+        }
+        return merge(base, subTreeDepth, uintLeaves);
     }
 
-    function merge(bytes32 base, bytes32[] memory leaves) internal pure returns (bytes32) {
-        return RollUpLib.merge(base, leaves);
+    function merge(bytes32 base, uint subTreeDepth, uint[] memory leaves) internal pure returns (bytes32) {
+        uint[][] memory subTrees = splitToSubTrees(leaves, subTreeDepth);
+        return merge(base, subTrees);
+    }
+
+    function merge(bytes32 base, uint[][] memory subTrees) internal pure returns (bytes32) {
+        bytes32[] memory subTreeHashes = new bytes32[](subTrees.length);
+        for(uint i = 0; i < subTrees.length; i++) {
+            subTreeHashes[i] = keccak256(abi.encodePacked(subTrees[i]));
+        }
+        return RollUpLib.merge(base, subTreeHashes);
+    }
+
+    function mergeResult(uint[] memory leaves, uint subTreeDepth) internal pure returns (
+        bytes32 mergedAsIndividuals,
+        bytes32 mergedAsSubTrees
+    )
+    {
+        return (
+            RollUpLib.merge(bytes32(0), leaves),
+            merge(bytes32(0), subTreeDepth, leaves)
+        );
     }
 
     /**
@@ -228,7 +251,7 @@ library SubTreeRollUpLib {
         Hasher memory self,
         uint index,
         uint subTreeDepth,
-        uint[] memory subTreeLeaves,
+        uint[] memory subTreeHashes,
         uint[] memory siblings
     ) internal pure returns(
         uint nextRoot,
@@ -238,7 +261,7 @@ library SubTreeRollUpLib {
         nextSiblings = new uint[](siblings.length);
         uint subTreePath = index >> subTreeDepth;
         uint path = subTreePath;
-        uint node = _subTreeRoot(self, subTreeDepth, subTreeLeaves);
+        uint node = _subTreeRoot(self, subTreeDepth, subTreeHashes);
         for (uint i = 0; i < siblings.length; i++) {
             if (path & 1 == 0) {
                 // right empty sibling
