@@ -1,6 +1,32 @@
 # merkle-tree-rollup
 
-This library provides "pure" type roll up functions for merkle tree structure. Implementer can choose or implement own hash function to calculate the branch node.
+This library provides 4 types of roll up function for merkle tree structure. Implementer can choose or implement own hash function to calculate the branch node.
+
+1. Pure roll up
+
+   It returns the roll up result after appending items to the merkle tree 1 by 1.
+
+2. Split roll up
+
+   When if a hash function is too expensive, you can accomplish a roll up using multiple transactions. To assure the validity of the roll up, it stores the intermediate result and a bytes32 value that merges every appended leaf into a single value. And then you can verify an optimistic roll up by comparing with this storage based roll up.
+
+3. Sub tree roll up
+
+   Sub tree roll up is a methodology to update a merlke tree with fixed-length of sub trees. For example, if you configure the sub-tree depth as 5, the minimum unit of appending leaves becomes 32. When you're trying to append 28 items, 4 empty zeroes will be appended as the right padding.
+
+4. Split roll up using sub tree insertion
+
+   Sub tree roll up also supports the Split roll up. You can append very large number of items using this.
+
+## Gas costs
+
+Used 31-depth merkle tree & split roll up
+
+|           | Roll Up          | Sub Tree Roll Up              |
+| --------- | ---------------- | ----------------------------- |
+| Keccak256 | ~20k gas / item  | ~5.2k (5.3M gas / 1024 items) |
+| MiMC      | ~1.5M gas / item | ~68k (4.4M gas / 64 items)    |
+| Poseidon  | ~3.3M gas / item | ~183k (5.9M gas / 32 items)   |
 
 [examples](./contracts/examples)
 [test codes](./test)
@@ -155,3 +181,16 @@ function newTree(Hasher memory hasher) internal pure returns (Tree memory tree) 
     tree.index = 0;
 }
 ```
+
+## Contribution
+
+Please submit a patch after testing it. To test the source code use the following commands.
+
+1. Compile
+   ```shell
+   yarn compile
+   ```
+2. Do test
+   ```shell
+   yarn test
+   ```

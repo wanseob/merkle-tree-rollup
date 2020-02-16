@@ -3,6 +3,7 @@
   "version": "1.1.4",
   "description": "Merkle Tree roll up library",
   "scripts": {
+    "compile": "./node_modules/.bin/truffle compile",
     "test": "./node_modules/.bin/truffle test",
     "prettier": "./node_modules/.bin/prettier --single-quote --write --print-width 160 ./**/*.js",
     "coverage": "./node_modules/.bin/solidity-coverage",
@@ -30,6 +31,7 @@
     "bn.js": "^4.11.8",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^3.0.0",
     "chai-bn": "^0.2.0",
     "circomlib": "0.0.20",
     "eth-gas-reporter": "^0.2.12",
